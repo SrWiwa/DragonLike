@@ -1,1 +1,3515 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dragon Ball — Roguelike</title>
+<style>
+/* ═══════════════════════════════════════════
+   TOKENS
+═══════════════════════════════════════════ */
+:root {
+  --bg:          #0d0d14;
+  --bg2:         #13131f;
+  --bg3:         #1a1a2e;
+  --panel:       #16162a;
+  --border:      #2a2a4a;
+  --gold:        #f5c842;
+  --gold2:       #e0a820;
+  --orange:      #e87c2a;
+  --orange2:     #c96018;
+  --red:         #d94040;
+  --green:       #4caf7d;
+  --blue:        #4a8fe8;
+  --ki:          #9b5de5;
+  --txt:         #e8e4d8;
+  --txt2:        #a09880;
+  --txt3:        #5a5470;
+  --white:       #ffffff;
+  --hp-color:    #4caf7d;
+  --ki-color:    #9b5de5;
+  --rad:         6px;
+  --rad2:        12px;
+  --font-main:   'Segoe UI', system-ui, sans-serif;
+  --font-title:  Georgia, 'Times New Roman', serif;
+}
 
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--txt);
+  font-family: var(--font-main);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ═══════════════════════════════════════════
+   PANTALLAS
+═══════════════════════════════════════════ */
+.screen { display: none; min-height: 100vh; }
+.screen.active { display: flex; flex-direction: column; }
+
+/* ═══════════════════════════════════════════
+   PANTALLA INICIO
+═══════════════════════════════════════════ */
+#screen-intro {
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at 50% 30%, #1e1040 0%, #0d0d14 70%);
+  position: relative;
+  overflow: hidden;
+}
+
+#screen-intro::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: 
+    radial-gradient(circle at 20% 80%, rgba(232,124,42,.08) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(155,93,229,.06) 0%, transparent 50%);
+}
+
+.intro-stars {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.star {
+  position: absolute;
+  background: var(--txt);
+  border-radius: 50%;
+  animation: twinkle 3s ease-in-out infinite;
+}
+
+@keyframes twinkle {
+  0%,100% { opacity: .15; }
+  50%      { opacity: .8; }
+}
+
+.intro-content {
+  position: relative;
+  text-align: center;
+  z-index: 1;
+}
+
+.intro-eyebrow {
+  font-size: .7rem;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  color: var(--orange);
+  margin-bottom: 1.2rem;
+}
+
+.intro-logo {
+  font-family: var(--font-title);
+  font-size: clamp(2.8rem, 8vw, 5.5rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -.02em;
+  background: linear-gradient(135deg, var(--gold) 0%, var(--orange) 50%, var(--gold2) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: .4rem;
+  text-shadow: none;
+  filter: drop-shadow(0 0 40px rgba(245,200,66,.25));
+}
+
+.intro-sub {
+  font-family: var(--font-title);
+  font-size: clamp(1rem, 3vw, 1.5rem);
+  color: var(--txt2);
+  letter-spacing: .08em;
+  margin-bottom: 3rem;
+}
+
+.intro-dragonballs {
+  display: flex;
+  justify-content: center;
+  gap: .5rem;
+  margin-bottom: 3rem;
+}
+
+.db-orb {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ffef80, var(--gold) 50%, #a06800);
+  box-shadow: 0 0 10px rgba(245,200,66,.4), inset 0 2px 4px rgba(255,255,255,.3);
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+  animation: floatOrb 4s ease-in-out infinite;
+}
+
+.db-orb:nth-child(2) { animation-delay: .3s; }
+.db-orb:nth-child(3) { animation-delay: .6s; }
+.db-orb:nth-child(4) { animation-delay: .9s; }
+.db-orb:nth-child(5) { animation-delay: 1.2s; }
+.db-orb:nth-child(6) { animation-delay: 1.5s; }
+.db-orb:nth-child(7) { animation-delay: 1.8s; }
+
+@keyframes floatOrb {
+  0%,100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+
+.db-stars {
+  display: flex; flex-wrap: wrap;
+  width: 20px; height: 20px;
+  align-items: center; justify-content: center;
+  gap: 1px;
+}
+
+.db-star {
+  width: 4px; height: 4px;
+  background: var(--red);
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+}
+
+.intro-btn {
+  display: inline-flex;
+  align-items: center; justify-content: center;
+  gap: .5rem;
+  padding: .9rem 2.5rem;
+  border-radius: var(--rad2);
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: .03em;
+  transition: all .2s;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--orange), var(--orange2));
+  color: var(--white);
+  box-shadow: 0 4px 20px rgba(232,124,42,.4);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 28px rgba(232,124,42,.55);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--txt2);
+  border: 1px solid var(--border);
+}
+
+.btn-secondary:hover {
+  color: var(--txt);
+  border-color: var(--txt3);
+}
+
+.intro-btns { display: flex; gap: 1rem; justify-content: center; }
+
+/* ═══════════════════════════════════════════
+   PANTALLA SELECCIÓN PERSONAJE
+═══════════════════════════════════════════ */
+#screen-char {
+  padding: 2rem;
+  background: radial-gradient(ellipse at 50% 0%, #1e1040 0%, var(--bg) 60%);
+}
+
+.char-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.screen-eyebrow {
+  font-size: .65rem;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  color: var(--orange);
+  margin-bottom: .6rem;
+}
+
+.screen-title {
+  font-family: var(--font-title);
+  font-size: clamp(1.6rem, 5vw, 2.5rem);
+  color: var(--gold);
+  margin-bottom: .5rem;
+}
+
+.screen-desc {
+  color: var(--txt2);
+  font-size: .9rem;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.char-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.char-card {
+  background: var(--panel);
+  border: 2px solid var(--border);
+  border-radius: var(--rad2);
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: all .25s;
+  position: relative;
+  overflow: hidden;
+}
+
+.char-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity .25s;
+}
+
+.char-card[data-char="goku"]::before   { background: radial-gradient(ellipse at 50% 0%, rgba(232,124,42,.15), transparent 70%); }
+.char-card[data-char="krillin"]::before { background: radial-gradient(ellipse at 50% 0%, rgba(74,143,232,.15), transparent 70%); }
+.char-card[data-char="bulma"]::before  { background: radial-gradient(ellipse at 50% 0%, rgba(155,93,229,.15), transparent 70%); }
+
+.char-card:hover, .char-card.selected {
+  border-color: var(--gold);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 30px rgba(245,200,66,.2);
+}
+
+.char-card:hover::before, .char-card.selected::before { opacity: 1; }
+
+.char-avatar {
+  font-size: 4rem;
+  text-align: center;
+  margin-bottom: 1rem;
+  line-height: 1;
+}
+
+.char-name {
+  font-family: var(--font-title);
+  font-size: 1.3rem;
+  color: var(--gold);
+  text-align: center;
+  margin-bottom: .25rem;
+}
+
+.char-style {
+  font-size: .75rem;
+  color: var(--orange);
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  margin-bottom: 1rem;
+}
+
+.stat-row {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  margin-bottom: .4rem;
+}
+
+.stat-label {
+  font-size: .7rem;
+  color: var(--txt3);
+  width: 32px;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  flex-shrink: 0;
+}
+
+.stat-bar {
+  flex: 1;
+  height: 5px;
+  background: var(--bg3);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.stat-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width .5s ease;
+}
+
+.stat-val {
+  font-size: .75rem;
+  color: var(--txt2);
+  width: 24px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.char-passive {
+  margin-top: 1rem;
+  padding: .6rem .8rem;
+  background: var(--bg3);
+  border-radius: var(--rad);
+  border-left: 3px solid var(--gold);
+  font-size: .75rem;
+  color: var(--txt2);
+}
+
+.char-passive strong { color: var(--gold); }
+
+.char-techs {
+  margin-top: .8rem;
+}
+
+.char-techs-label {
+  font-size: .65rem;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--txt3);
+  margin-bottom: .4rem;
+}
+
+.tech-pill {
+  display: inline-block;
+  padding: .2rem .5rem;
+  background: var(--bg3);
+  border-radius: 20px;
+  font-size: .68rem;
+  color: var(--txt2);
+  margin: .15rem;
+  border: 1px solid var(--border);
+}
+
+.char-select-btn {
+  width: 100%;
+  margin-top: 1.2rem;
+  padding: .7rem;
+  background: linear-gradient(135deg, var(--orange), var(--orange2));
+  color: white;
+  border: none;
+  border-radius: var(--rad);
+  cursor: pointer;
+  font-size: .85rem;
+  font-weight: 600;
+  letter-spacing: .03em;
+  transition: all .2s;
+}
+
+.char-select-btn:hover {
+  opacity: .9;
+  transform: translateY(-1px);
+}
+
+/* ═══════════════════════════════════════════
+   PANTALLA MAPA
+═══════════════════════════════════════════ */
+#screen-map {
+  flex-direction: row;
+  height: 100vh;
+}
+
+.map-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.map-topbar {
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: .75rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.map-title {
+  font-family: var(--font-title);
+  font-size: 1.1rem;
+  color: var(--gold);
+}
+
+.map-chapter {
+  font-size: .7rem;
+  color: var(--txt3);
+  text-transform: uppercase;
+  letter-spacing: .1em;
+}
+
+.map-canvas-wrap {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 2rem;
+  background: radial-gradient(ellipse at 50% 30%, #1a1035 0%, var(--bg) 70%);
+}
+
+#map-canvas {
+  /* dimensiones se ponen via JS */
+}
+
+.map-node {
+  position: absolute;
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: all .2s;
+  font-size: 1.3rem;
+  border: 2px solid transparent;
+  transform: translate(-50%, -50%);
+  user-select: none;
+}
+
+.map-node.reachable {
+  animation: pulseNode 1.5s ease-in-out infinite;
+}
+
+@keyframes pulseNode {
+  0%,100% { box-shadow: 0 0 0 0 rgba(245,200,66,.5); }
+  50%      { box-shadow: 0 0 0 8px rgba(245,200,66,0); }
+}
+
+.map-node[data-type="fight"] {
+  background: radial-gradient(circle at 40% 35%, #3a1212, #1a0808);
+  border-color: var(--red);
+}
+.map-node[data-type="hoipoi"] {
+  background: radial-gradient(circle at 40% 35%, #1a2e1a, #0a1a0a);
+  border-color: var(--green);
+}
+.map-node[data-type="upgrade"] {
+  background: radial-gradient(circle at 40% 35%, #2a2a0a, #1a1a00);
+  border-color: var(--gold);
+}
+.map-node[data-type="heal"] {
+  background: radial-gradient(circle at 40% 35%, #1a2e2e, #0a1a1a);
+  border-color: var(--blue);
+}
+.map-node[data-type="event"] {
+  background: radial-gradient(circle at 40% 35%, #2a1a3a, #150a2a);
+  border-color: var(--ki);
+}
+.map-node[data-type="boss"] {
+  background: radial-gradient(circle at 40% 35%, #3a0a0a, #200000);
+  border-color: var(--red);
+  box-shadow: 0 0 20px rgba(217,64,64,.4);
+  font-size: 1.6rem;
+}
+
+.map-node.visited {
+  opacity: .4;
+  filter: saturate(0);
+  cursor: default;
+}
+
+.map-node.current {
+  border-color: var(--white);
+  box-shadow: 0 0 15px rgba(255,255,255,.4);
+}
+
+.map-node.locked {
+  opacity: .25;
+  cursor: default;
+}
+
+/* Panel lateral */
+.map-sidebar {
+  width: 260px;
+  background: var(--bg2);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.sidebar-section {
+  border-bottom: 1px solid var(--border);
+  padding: 1rem;
+}
+
+.sidebar-label {
+  font-size: .65rem;
+  text-transform: uppercase;
+  letter-spacing: .15em;
+  color: var(--txt3);
+  margin-bottom: .7rem;
+}
+
+.hero-portrait {
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  margin-bottom: .8rem;
+}
+
+.hero-avatar {
+  font-size: 2rem;
+  width: 44px; height: 44px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg3);
+  border-radius: var(--rad);
+  border: 1px solid var(--border);
+}
+
+.hero-info { flex: 1; }
+.hero-name { font-size: .9rem; font-weight: 600; color: var(--txt); }
+.hero-level { font-size: .72rem; color: var(--gold); }
+
+.mini-bar-row { margin-bottom: .35rem; }
+.mini-bar-label {
+  display: flex; justify-content: space-between;
+  font-size: .67rem;
+  color: var(--txt3);
+  margin-bottom: 2px;
+}
+.mini-bar {
+  height: 6px;
+  background: var(--bg3);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.mini-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width .4s ease;
+}
+.mini-bar-fill.hp  { background: var(--hp-color); }
+.mini-bar-fill.ki  { background: var(--ki-color); }
+
+.companions-list { display: flex; flex-direction: column; gap: .5rem; }
+.companion-row {
+  display: flex; align-items: center; gap: .6rem;
+  padding: .4rem .5rem;
+  background: var(--bg3);
+  border-radius: var(--rad);
+  border: 1px solid var(--border);
+}
+.companion-avatar { font-size: 1.2rem; }
+.companion-info { flex: 1; min-width: 0; }
+.companion-name { font-size: .75rem; color: var(--txt); }
+.companion-hp-bar {
+  height: 3px;
+  background: var(--bg);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 2px;
+}
+.companion-hp-fill { height: 100%; background: var(--hp-color); border-radius: 2px; }
+
+.inventory-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: .35rem;
+}
+.inv-slot {
+  aspect-ratio: 1;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--rad);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem;
+  cursor: pointer;
+  position: relative;
+  transition: border-color .15s;
+}
+.inv-slot:hover { border-color: var(--txt3); }
+.inv-slot.empty { opacity: .3; cursor: default; }
+
+.dragonballs-row {
+  display: flex; gap: .3rem; flex-wrap: wrap;
+}
+.db-mini {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: .5rem;
+  opacity: .3;
+  transition: all .3s;
+}
+.db-mini.found {
+  background: radial-gradient(circle at 35% 35%, #ffef80, var(--gold) 50%, #a06800);
+  border-color: var(--gold);
+  opacity: 1;
+  box-shadow: 0 0 6px rgba(245,200,66,.4);
+}
+.db-mini-stars { color: var(--red); font-size: .45rem; }
+
+/* ═══════════════════════════════════════════
+   PANTALLA COMBATE
+═══════════════════════════════════════════ */
+#screen-combat {
+  background: radial-gradient(ellipse at 50% 20%, #1a0a0a 0%, var(--bg) 70%);
+  padding: 1rem;
+  justify-content: space-between;
+  min-height: 100vh;
+}
+
+.combat-header {
+  text-align: center;
+  padding: .5rem;
+}
+
+.combat-title {
+  font-family: var(--font-title);
+  font-size: 1rem;
+  color: var(--txt3);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.combat-arena {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 1rem;
+  align-items: center;
+  max-width: 700px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 1rem 0;
+}
+
+.fighter-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--rad2);
+  padding: 1.2rem;
+}
+
+.fighter-panel.player-panel { border-color: var(--blue); }
+.fighter-panel.enemy-panel  { border-color: var(--red); }
+
+.fighter-top {
+  display: flex; align-items: center; gap: .8rem;
+  margin-bottom: 1rem;
+}
+
+.fighter-avatar {
+  font-size: 2.5rem;
+  width: 54px; height: 54px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg3);
+  border-radius: var(--rad);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.fighter-name {
+  font-weight: 600;
+  font-size: .95rem;
+  color: var(--txt);
+}
+
+.fighter-level {
+  font-size: .7rem;
+  color: var(--txt3);
+}
+
+.combat-bar-wrap { margin-bottom: .5rem; }
+.combat-bar-label {
+  display: flex; justify-content: space-between;
+  font-size: .68rem;
+  color: var(--txt3);
+  margin-bottom: 3px;
+}
+.combat-bar {
+  height: 10px;
+  background: var(--bg3);
+  border-radius: 5px;
+  overflow: hidden;
+}
+.combat-bar-fill {
+  height: 100%;
+  border-radius: 5px;
+  transition: width .4s ease;
+}
+.combat-bar-fill.hp { background: var(--hp-color); }
+.combat-bar-fill.ki { background: var(--ki-color); }
+
+.vs-badge {
+  font-family: var(--font-title);
+  font-size: 1.4rem;
+  color: var(--gold);
+  font-weight: 700;
+  text-shadow: 0 0 20px rgba(245,200,66,.5);
+}
+
+.combat-log-wrap {
+  max-width: 700px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.combat-log {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--rad);
+  padding: .8rem 1rem;
+  min-height: 80px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.log-line {
+  font-size: .8rem;
+  color: var(--txt2);
+  margin-bottom: .25rem;
+  line-height: 1.4;
+}
+.log-line.hit    { color: var(--orange); }
+.log-line.miss   { color: var(--txt3); }
+.log-line.heal   { color: var(--green); }
+.log-line.ki     { color: var(--ki); }
+.log-line.info   { color: var(--blue); }
+.log-line.crit   { color: var(--gold); font-weight: 600; }
+.log-line.danger { color: var(--red); }
+
+.combat-actions {
+  max-width: 700px;
+  margin: 0 auto;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: .6rem;
+}
+
+.action-btn {
+  padding: .7rem 1rem;
+  border-radius: var(--rad);
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--txt);
+  cursor: pointer;
+  font-size: .85rem;
+  font-weight: 500;
+  text-align: left;
+  transition: all .15s;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.action-btn:hover:not(:disabled) {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: var(--bg3);
+}
+
+.action-btn:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+}
+
+.action-btn.attack { border-color: var(--orange); }
+.action-btn.attack:hover { background: rgba(232,124,42,.1); }
+
+.action-ki-cost {
+  font-size: .7rem;
+  color: var(--ki);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.combat-techs-panel {
+  display: none;
+  max-width: 700px;
+  margin: .4rem auto 0;
+  width: 100%;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--rad);
+  padding: .5rem;
+}
+
+.combat-techs-panel.open { display: block; }
+
+.tech-btn {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  width: 100%;
+  padding: .5rem .7rem;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--rad);
+  color: var(--txt);
+  cursor: pointer;
+  font-size: .82rem;
+  margin-bottom: .3rem;
+  transition: all .15s;
+}
+
+.tech-btn:hover:not(:disabled) {
+  border-color: var(--ki);
+  color: var(--ki);
+}
+
+.tech-btn:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+}
+
+.tech-cost { color: var(--ki); font-size: .72rem; margin-left: auto; }
+.tech-cd   { color: var(--red); font-size: .68rem; }
+
+/* ═══════════════════════════════════════════
+   PANTALLA HOI-POI
+═══════════════════════════════════════════ */
+#screen-hoipoi {
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at 50% 40%, #0a2a1a 0%, var(--bg) 70%);
+  text-align: center;
+  padding: 2rem;
+}
+
+.hoipoi-capsule {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff4444 50%, #ffffff 50%);
+  border: 4px solid rgba(255,255,255,.3);
+  margin: 0 auto 2rem;
+  box-shadow: 0 0 30px rgba(255,100,100,.4);
+  animation: capsuleSpin 1s ease-out;
+  position: relative;
+}
+
+@keyframes capsuleSpin {
+  from { transform: rotate(-30deg) scale(.5); opacity: 0; }
+  to   { transform: rotate(0) scale(1); opacity: 1; }
+}
+
+.hoipoi-opening {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  animation: popIn .4s ease-out .8s both;
+}
+
+@keyframes popIn {
+  from { transform: scale(0) rotate(-15deg); opacity: 0; }
+  to   { transform: scale(1) rotate(0); opacity: 1; }
+}
+
+.hoipoi-label {
+  font-size: .7rem;
+  text-transform: uppercase;
+  letter-spacing: .2em;
+  color: var(--green);
+  margin-bottom: .5rem;
+}
+
+.hoipoi-name {
+  font-family: var(--font-title);
+  font-size: 1.8rem;
+  color: var(--gold);
+  margin-bottom: .5rem;
+}
+
+.hoipoi-desc {
+  color: var(--txt2);
+  max-width: 360px;
+  margin: 0 auto 2rem;
+  font-size: .9rem;
+  line-height: 1.5;
+}
+
+/* ═══════════════════════════════════════════
+   PANTALLA MEJORA
+═══════════════════════════════════════════ */
+#screen-upgrade {
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at 50% 30%, #2a1a00 0%, var(--bg) 70%);
+  padding: 2rem;
+}
+
+.upgrade-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  max-width: 720px;
+  width: 100%;
+}
+
+.upgrade-card {
+  background: var(--panel);
+  border: 2px solid var(--border);
+  border-radius: var(--rad2);
+  padding: 1.3rem;
+  cursor: pointer;
+  transition: all .2s;
+  text-align: center;
+}
+
+.upgrade-card:hover {
+  border-color: var(--gold);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(245,200,66,.2);
+}
+
+.upgrade-icon { font-size: 2.2rem; margin-bottom: .7rem; }
+.upgrade-name { font-weight: 600; color: var(--gold); margin-bottom: .4rem; }
+.upgrade-desc { font-size: .8rem; color: var(--txt2); line-height: 1.4; }
+
+/* ═══════════════════════════════════════════
+   PANTALLA EVENTO
+═══════════════════════════════════════════ */
+#screen-event {
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at 50% 30%, #0d0d30 0%, var(--bg) 70%);
+  padding: 2rem;
+}
+
+.event-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--rad2);
+  max-width: 520px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.event-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.event-icon { font-size: 2.5rem; }
+.event-title-wrap {}
+.event-eyebrow { font-size: .65rem; text-transform: uppercase; letter-spacing: .15em; color: var(--ki); }
+.event-title { font-family: var(--font-title); font-size: 1.2rem; color: var(--gold); }
+
+.event-body {
+  padding: 1.5rem;
+  color: var(--txt2);
+  font-size: .9rem;
+  line-height: 1.6;
+  border-bottom: 1px solid var(--border);
+}
+
+.event-choices {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+
+.event-choice {
+  padding: .75rem 1rem;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--rad);
+  color: var(--txt);
+  cursor: pointer;
+  font-size: .85rem;
+  text-align: left;
+  transition: all .15s;
+}
+
+.event-choice:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+/* ═══════════════════════════════════════════
+   PANTALLA BOSS INTRO
+═══════════════════════════════════════════ */
+#screen-boss-intro {
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at 50% 40%, #2a0000 0%, var(--bg) 70%);
+  padding: 2rem;
+  text-align: center;
+}
+
+.boss-flash {
+  font-size: 5rem;
+  margin-bottom: 1rem;
+  animation: bossEntrance 1s ease-out;
+  filter: drop-shadow(0 0 20px rgba(217,64,64,.6));
+}
+
+@keyframes bossEntrance {
+  from { transform: scale(2) rotate(-10deg); opacity: 0; }
+  to   { transform: scale(1) rotate(0); opacity: 1; }
+}
+
+.boss-eyebrow {
+  font-size: .65rem;
+  text-transform: uppercase;
+  letter-spacing: .3em;
+  color: var(--red);
+  margin-bottom: .5rem;
+}
+
+.boss-name {
+  font-family: var(--font-title);
+  font-size: clamp(1.8rem, 5vw, 3rem);
+  color: var(--red);
+  text-shadow: 0 0 30px rgba(217,64,64,.5);
+  margin-bottom: 1rem;
+}
+
+.boss-lore {
+  color: var(--txt2);
+  max-width: 420px;
+  margin: 0 auto 2rem;
+  line-height: 1.6;
+  font-size: .9rem;
+}
+
+/* ═══════════════════════════════════════════
+   PANTALLA VICTORIA / GAMEOVER
+═══════════════════════════════════════════ */
+#screen-result {
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  text-align: center;
+}
+
+.result-icon { font-size: 4rem; margin-bottom: 1rem; }
+.result-title {
+  font-family: var(--font-title);
+  font-size: clamp(2rem, 6vw, 3.5rem);
+  margin-bottom: .5rem;
+}
+.result-title.win  { color: var(--gold); }
+.result-title.lose { color: var(--red); }
+.result-sub {
+  color: var(--txt2);
+  margin-bottom: 2rem;
+  font-size: .95rem;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.5;
+}
+
+.result-stats {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--rad2);
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  max-width: 380px;
+  width: 100%;
+  text-align: left;
+}
+
+.result-stat-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: .85rem;
+  padding: .4rem 0;
+  border-bottom: 1px solid var(--border);
+  color: var(--txt2);
+}
+.result-stat-row:last-child { border-bottom: none; }
+.result-stat-row span:last-child { color: var(--gold); font-weight: 600; }
+
+/* ═══════════════════════════════════════════
+   MODAL
+═══════════════════════════════════════════ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.75);
+  z-index: 100;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--rad2);
+  max-width: 420px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.modal-header {
+  padding: 1.2rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+.modal-title { font-family: var(--font-title); font-size: 1.1rem; color: var(--gold); }
+
+.modal-close {
+  background: none; border: none; color: var(--txt3);
+  font-size: 1.2rem; cursor: pointer;
+  padding: .2rem; transition: color .15s;
+}
+.modal-close:hover { color: var(--txt); }
+
+.modal-body { padding: 1.2rem 1.5rem; }
+.modal-footer { padding: 1rem 1.5rem; border-top: 1px solid var(--border); display: flex; gap: .5rem; justify-content: flex-end; }
+
+/* ═══════════════════════════════════════════
+   UTILIDADES
+═══════════════════════════════════════════ */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: .4rem;
+  padding: .65rem 1.4rem;
+  border-radius: var(--rad);
+  border: none; cursor: pointer;
+  font-size: .85rem; font-weight: 600;
+  transition: all .15s;
+}
+.btn-gold    { background: linear-gradient(135deg, var(--gold), var(--gold2)); color: #1a1000; }
+.btn-danger  { background: linear-gradient(135deg, var(--red), #a02020); color: white; }
+.btn-ghost   { background: transparent; color: var(--txt2); border: 1px solid var(--border); }
+.btn:hover:not(:disabled) { opacity: .9; transform: translateY(-1px); }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+
+.tag {
+  display: inline-block;
+  padding: .15rem .45rem;
+  border-radius: 20px;
+  font-size: .65rem;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+.tag-orange { background: rgba(232,124,42,.2); color: var(--orange); border: 1px solid rgba(232,124,42,.3); }
+.tag-ki     { background: rgba(155,93,229,.2); color: var(--ki);     border: 1px solid rgba(155,93,229,.3); }
+.tag-green  { background: rgba(76,175,125,.2); color: var(--green);  border: 1px solid rgba(76,175,125,.3); }
+
+.mt-1 { margin-top: .5rem; }
+.mt-2 { margin-top: 1rem; }
+.text-center { text-align: center; }
+
+/* ═══════════════════════════════════════════
+   SCROLLBAR
+═══════════════════════════════════════════ */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--txt3); }
+
+/* ═══════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════ */
+#toast-container {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+  pointer-events: none;
+}
+
+.toast {
+  padding: .6rem 1.2rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--rad2);
+  font-size: .82rem;
+  color: var(--txt);
+  white-space: nowrap;
+  animation: toastIn .3s ease-out;
+  box-shadow: 0 4px 16px rgba(0,0,0,.4);
+}
+
+@keyframes toastIn {
+  from { transform: translateY(10px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
+.toast.fade-out { animation: toastOut .3s ease-in forwards; }
+
+@keyframes toastOut {
+  to { transform: translateY(-8px); opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════
+   DAMAGE NUMBERS
+═══════════════════════════════════════════ */
+.dmg-float {
+  position: fixed;
+  font-size: 1.4rem;
+  font-weight: 700;
+  pointer-events: none;
+  z-index: 150;
+  animation: floatDmg .9s ease-out forwards;
+}
+
+.dmg-float.phys  { color: var(--orange); }
+.dmg-float.ki    { color: var(--ki); }
+.dmg-float.heal  { color: var(--green); }
+.dmg-float.crit  { color: var(--gold); font-size: 1.8rem; }
+.dmg-float.miss  { color: var(--txt3); font-size: 1rem; }
+
+@keyframes floatDmg {
+  0%   { transform: translateY(0) scale(.8); opacity: 1; }
+  30%  { transform: translateY(-30px) scale(1.1); opacity: 1; }
+  100% { transform: translateY(-70px) scale(.9); opacity: 0; }
+}
+
+/* ── TOOLTIP NODOS ── */
+.node-tooltip {
+  position: absolute;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--rad);
+  padding: .3rem .6rem;
+  font-size: .68rem;
+  color: var(--txt2);
+  white-space: nowrap;
+  z-index: 20;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .15s;
+  transform: translate(-50%, -120%);
+  top: 0; left: 50%;
+}
+.map-node:hover .node-tooltip { opacity: 1; }
+
+/* ── PANTALLA CURACIÓN ── */
+#screen-heal {
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at 50% 40%, #021a10 0%, var(--bg) 70%);
+  text-align: center;
+  padding: 2rem;
+}
+.heal-orb {
+  width: 100px; height: 100px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #80ffbb, var(--green) 60%, #1a5a30);
+  box-shadow: 0 0 40px rgba(76,175,125,.5);
+  margin: 0 auto 1.5rem;
+  animation: healPulse 1.5s ease-in-out infinite;
+}
+@keyframes healPulse {
+  0%,100% { box-shadow: 0 0 40px rgba(76,175,125,.5), 0 0 0 0 rgba(76,175,125,.4); }
+  50%      { box-shadow: 0 0 60px rgba(76,175,125,.7), 0 0 20px rgba(76,175,125,0); }
+}
+.heal-amount {
+  font-family: var(--font-title);
+  font-size: 2.5rem;
+  color: var(--green);
+  margin-bottom: .3rem;
+}
+.heal-label { color: var(--txt2); font-size: .9rem; margin-bottom: 2rem; max-width: 340px; line-height: 1.5; }
+
+/* ── PANTALLA LEVEL UP ── */
+#screen-levelup {
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at 50% 30%, #1a1000 0%, var(--bg) 70%);
+  text-align: center;
+  padding: 2rem;
+}
+.levelup-anim {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  animation: lvlPop .6s ease-out;
+}
+@keyframes lvlPop {
+  0% { transform: scale(0); opacity: 0; }
+  70% { transform: scale(1.25); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.levelup-title {
+  font-family: var(--font-title);
+  font-size: 2.5rem;
+  color: var(--gold);
+  text-shadow: 0 0 20px rgba(245,200,66,.4);
+  margin-bottom: .4rem;
+}
+.levelup-sub { color: var(--txt2); font-size: .9rem; margin-bottom: 2rem; }
+.levelup-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .5rem;
+  max-width: 320px;
+  width: 100%;
+  margin: 0 auto 2rem;
+  text-align: left;
+}
+.lu-stat {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--rad);
+  padding: .5rem .8rem;
+}
+.lu-stat-name { font-size: .65rem; text-transform: uppercase; letter-spacing: .05em; color: var(--txt3); }
+.lu-stat-val  { font-size: .95rem; font-weight: 700; color: var(--green); }
+
+/* ── EFECTOS JUGADOR EN COMBATE ── */
+#cf-player-effects { margin-top: .4rem; display: flex; gap: .3rem; flex-wrap: wrap; min-height: 22px; }
+#cf-enemy-desc { margin-top: .5rem; font-size: .72rem; color: var(--txt3); line-height: 1.4; }
+
+/* ── MINI STATS SIDEBAR ── */
+#sb-stats-mini { margin-top: .6rem; display: flex; gap: .4rem; flex-wrap: wrap; }
+.sb-mini-stat {
+  font-size: .68rem;
+  color: var(--txt3);
+  background: var(--bg3);
+  padding: .15rem .4rem;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+.sb-mini-stat b { color: var(--txt2); }
+
+/* ── TAG EXTRA ── */
+.tag-red { background: rgba(217,64,64,.2); color: var(--red); border: 1px solid rgba(217,64,64,.3); }
+.btn-green { background: linear-gradient(135deg, var(--green), #2a7a50); color: white; }
+
+/* Responsive */
+@media (max-width: 680px) {
+  #screen-map { flex-direction: column; }
+  .map-sidebar { width: 100%; border-left: none; border-top: 1px solid var(--border); max-height: 240px; }
+  .combat-arena { grid-template-columns: 1fr; gap: .5rem; }
+  .vs-badge { display: none; }
+  .char-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════
+     TOAST
+════════════════════════════════════════ -->
+<div id="toast-container"></div>
+
+<!-- ════════════════════════════════════════
+     PANTALLA: INICIO
+════════════════════════════════════════ -->
+<div id="screen-intro" class="screen">
+  <div class="intro-stars" id="stars-container"></div>
+  <div class="intro-content">
+    <p class="intro-eyebrow">Un juego roguelike de navegador</p>
+    <h1 class="intro-logo">Dragon Ball</h1>
+    <p class="intro-sub">Roguelike</p>
+    <div class="intro-dragonballs" id="intro-orbs"></div>
+    <div class="intro-btns">
+      <button class="intro-btn btn-primary" onclick="Game.newGame()">▶ Nueva Partida</button>
+      <button class="intro-btn btn-secondary" onclick="Game.continueGame()" id="btn-continue">Continuar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     PANTALLA: SELECCIÓN DE PERSONAJE
+════════════════════════════════════════ -->
+<div id="screen-char" class="screen">
+  <div class="char-header">
+    <p class="screen-eyebrow">Mapa 1 — El Inicio</p>
+    <h2 class="screen-title">Elige tu personaje</h2>
+    <p class="screen-desc">Tu elección define tu estilo de juego. Cada personaje tiene estadísticas, habilidades y pasivas únicas.</p>
+  </div>
+  <div class="char-grid" id="char-grid">
+    <!-- generado por JS -->
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     PANTALLA: MAPA
+════════════════════════════════════════ -->
+<div id="screen-map" class="screen">
+  <div class="map-main">
+    <div class="map-topbar">
+      <div>
+        <div class="map-title" id="map-title">Mapa 1 — El Inicio</div>
+        <div class="map-chapter" id="map-chapter">Montaña 439 · Pilaf acecha las Dragon Balls</div>
+      </div>
+      <div style="display:flex;gap:.5rem;">
+        <button class="btn btn-ghost" style="font-size:.8rem;" onclick="UI.showTeamModal()">👥 Equipo</button>
+        <button class="btn btn-ghost" style="font-size:.8rem;" onclick="UI.showInventoryModal()">🎒 Inventario</button>
+      </div>
+    </div>
+    <div class="map-canvas-wrap">
+      <div id="map-canvas" style="position:relative;"></div>
+    </div>
+  </div>
+  <div class="map-sidebar">
+    <!-- Héroe -->
+    <div class="sidebar-section">
+      <div class="sidebar-label">Personaje</div>
+      <div class="hero-portrait">
+        <div class="hero-avatar" id="sb-avatar">🐒</div>
+        <div class="hero-info">
+          <div class="hero-name" id="sb-name">Goku Niño</div>
+          <div class="hero-level" id="sb-level">Nivel 1</div>
+        </div>
+      </div>
+      <div class="mini-bar-row">
+        <div class="mini-bar-label"><span>HP</span><span id="sb-hp-txt">80/80</span></div>
+        <div class="mini-bar"><div class="mini-bar-fill hp" id="sb-hp-bar" style="width:100%"></div></div>
+      </div>
+      <div class="mini-bar-row">
+        <div class="mini-bar-label"><span>Ki</span><span id="sb-ki-txt">40/40</span></div>
+        <div class="mini-bar"><div class="mini-bar-fill ki" id="sb-ki-bar" style="width:100%"></div></div>
+      </div>
+      <div id="sb-stats-mini" style="margin-top:.6rem;display:flex;gap:.4rem;flex-wrap:wrap;"></div>
+    </div>
+    <!-- Compañeros -->
+    <div class="sidebar-section">
+      <div class="sidebar-label">Compañeros <span id="sb-companions-count" style="color:var(--txt3);">(0/2)</span></div>
+      <div id="sb-companions">
+        <div style="font-size:.78rem;color:var(--txt3);">Sin compañeros aún.</div>
+      </div>
+    </div>
+    <!-- Inventario rápido -->
+    <div class="sidebar-section">
+      <div class="sidebar-label">Inventario</div>
+      <div class="inventory-grid" id="sb-inventory">
+        <!-- 6 slots generados por JS -->
+      </div>
+    </div>
+    <!-- Dragon Balls -->
+    <div class="sidebar-section">
+      <div class="sidebar-label">Dragon Balls</div>
+      <div class="dragonballs-row" id="sb-dragonballs"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     PANTALLA: COMBATE
+════════════════════════════════════════ -->
+<div id="screen-combat" class="screen">
+  <div class="combat-header">
+    <div class="combat-title" id="combat-type-label">Combate</div>
+  </div>
+
+  <div class="combat-arena">
+    <!-- Jugador -->
+    <div class="fighter-panel player-panel">
+      <div class="fighter-top">
+        <div class="fighter-avatar" id="cf-player-avatar">🐒</div>
+        <div>
+          <div class="fighter-name" id="cf-player-name">Goku Niño</div>
+          <div class="fighter-level" id="cf-player-level">Nivel 1</div>
+        </div>
+      </div>
+      <div class="combat-bar-wrap">
+        <div class="combat-bar-label">
+          <span>HP</span>
+          <span id="cf-player-hp-txt">80/80</span>
+        </div>
+        <div class="combat-bar"><div class="combat-bar-fill hp" id="cf-player-hp-bar" style="width:100%"></div></div>
+      </div>
+      <div class="combat-bar-wrap">
+        <div class="combat-bar-label">
+          <span>Ki</span>
+          <span id="cf-player-ki-txt">40/40</span>
+        </div>
+        <div class="combat-bar"><div class="combat-bar-fill ki" id="cf-player-ki-bar" style="width:100%"></div></div>
+      </div>
+      <!-- Efectos activos jugador -->
+      <div id="cf-player-effects" style="margin-top:.4rem;display:flex;gap:.3rem;flex-wrap:wrap;min-height:22px;"></div>
+      <!-- Compañeros en combate -->
+      <div id="cf-team-reserve" style="margin-top:.7rem;display:flex;flex-direction:column;gap:.35rem;"></div>
+    </div>
+
+    <div class="vs-badge">VS</div>
+
+    <!-- Enemigo -->
+    <div class="fighter-panel enemy-panel">
+      <div class="fighter-top" style="flex-direction:row-reverse;text-align:right;">
+        <div class="fighter-avatar" id="cf-enemy-avatar">👹</div>
+        <div>
+          <div class="fighter-name" id="cf-enemy-name">Enemigo</div>
+          <div class="fighter-level" id="cf-enemy-level">Nivel 1</div>
+        </div>
+      </div>
+      <div class="combat-bar-wrap">
+        <div class="combat-bar-label">
+          <span>HP</span>
+          <span id="cf-enemy-hp-txt">50/50</span>
+        </div>
+        <div class="combat-bar"><div class="combat-bar-fill hp" id="cf-enemy-hp-bar" style="width:100%"></div></div>
+      </div>
+      <div style="margin-top:.5rem;" id="cf-enemy-status"></div>
+      <div style="margin-top:.4rem;font-size:.72rem;color:var(--txt3);line-height:1.4;" id="cf-enemy-desc"></div>
+    </div>
+  </div>
+
+  <!-- Log -->
+  <div class="combat-log-wrap">
+    <div class="combat-log" id="combat-log"></div>
+  </div>
+
+  <!-- Acciones -->
+  <div class="combat-actions" id="combat-actions">
+    <button class="action-btn attack" id="btn-attack" onclick="Combat.playerAction('attack')">
+      👊 Atacar
+    </button>
+    <button class="action-btn" id="btn-tech" onclick="Combat.toggleTechs()">
+      ⚡ Técnicas
+    </button>
+    <button class="action-btn" id="btn-item" onclick="Combat.playerAction('item')">
+      🎒 Objeto
+    </button>
+    <button class="action-btn" id="btn-flee" onclick="Combat.playerAction('flee')">
+      💨 Huir
+    </button>
+  </div>
+  <div class="combat-techs-panel" id="combat-techs-panel"></div>
+</div>
+
+<!-- ════════════════════════════════════════
+     PANTALLA: HOI-POI
+════════════════════════════════════════ -->
+<div id="screen-hoipoi" class="screen">
+  <div class="hoipoi-capsule"></div>
+  <div class="hoipoi-opening" id="hoipoi-icon">📦</div>
+  <p class="hoipoi-label" id="hoipoi-type">Objeto</p>
+  <h2 class="hoipoi-name" id="hoipoi-name">Cápsula Hoi-Poi</h2>
+  <p class="hoipoi-desc" id="hoipoi-desc">Una recompensa inesperada.</p>
+  <button class="btn btn-gold" onclick="Game.afterHoipoi()">Continuar →</button>
+</div>
+
+<!-- ════════════════════════════════════════
+     PANTALLA: CURACIÓN
+════════════════════════════════════════ -->
+<div id="screen-heal" class="screen">
+  <div class="heal-orb"></div>
+  <div class="heal-amount" id="heal-amount">+28 HP</div>
+  <div class="heal-label" id="heal-label">Has encontrado un lugar tranquilo para descansar.</div>
+  <button class="btn btn-green" style="margin-top:1rem;" onclick="Game.afterEvent()">Continuar →</button>
+</div>
+
+<!-- ════════════════════════════════════════
+     PANTALLA: LEVEL UP
+════════════════════════════════════════ -->
+<div id="screen-levelup" class="screen">
+  <div class="levelup-anim">⭐</div>
+  <h2 class="levelup-title">¡Nivel <span id="lu-level">2</span>!</h2>
+  <p class="levelup-sub" id="lu-sub">Has ganado experiencia en combate.</p>
+  <div class="levelup-stats" id="lu-stats"></div>
+  <button class="btn btn-gold" id="lu-btn">Continuar →</button>
+</div>
+
+<!-- ════════════════════════════════════════
+     PANTALLA: MEJORA
+════════════════════════════════════════ -->
+<div id="screen-upgrade" class="screen">
+  <div style="text-align:center;margin-bottom:2rem;">
+    <p class="screen-eyebrow">Mejora</p>
+    <h2 class="screen-title">Elige una mejora</h2>
+    <p class="screen-desc">Solo puedes elegir una. Escoge sabiamente.</p>
+  </div>
+  <div class="upgrade-grid" id="upgrade-grid"></div>
+</div>
+
+<!-- ════════════════════════════════════════
+     PANTALLA: EVENTO
+════════════════════════════════════════ -->
+<div id="screen-event" class="screen">
+  <div class="event-panel">
+    <div class="event-header">
+      <div class="event-icon" id="ev-icon">👤</div>
+      <div class="event-title-wrap">
+        <div class="event-eyebrow" id="ev-eyebrow">Encuentro</div>
+        <div class="event-title" id="ev-title">Evento</div>
+      </div>
+    </div>
+    <div class="event-body" id="ev-body">Texto del evento.</div>
+    <div class="event-choices" id="ev-choices"></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     PANTALLA: BOSS INTRO
+════════════════════════════════════════ -->
+<div id="screen-boss-intro" class="screen">
+  <div class="boss-flash" id="boss-icon">👹</div>
+  <p class="boss-eyebrow">Boss Final</p>
+  <h2 class="boss-name" id="boss-name">Pilaf</h2>
+  <p class="boss-lore" id="boss-lore">El villano aguarda.</p>
+  <button class="btn btn-danger" onclick="Combat.startBoss()">⚔ Combatir</button>
+</div>
+
+<!-- ════════════════════════════════════════
+     PANTALLA: RESULTADO
+════════════════════════════════════════ -->
+<div id="screen-result" class="screen">
+  <div class="result-icon" id="result-icon">🏆</div>
+  <h2 class="result-title" id="result-title">Victoria</h2>
+  <p class="result-sub" id="result-sub">Has completado el mapa.</p>
+  <div class="result-stats" id="result-stats"></div>
+  <button class="btn btn-gold" onclick="Game.backToTitle()">Volver al inicio</button>
+</div>
+
+<!-- ════════════════════════════════════════
+     MODAL INVENTARIO
+════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-inventory">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">🎒 Inventario</div>
+      <button class="modal-close" onclick="UI.closeModal('modal-inventory')">✕</button>
+    </div>
+    <div class="modal-body" id="modal-inventory-body">Sin objetos.</div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="UI.closeModal('modal-inventory')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     MODAL EQUIPO
+════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-team">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">👥 Equipo</div>
+      <button class="modal-close" onclick="UI.closeModal('modal-team')">✕</button>
+    </div>
+    <div class="modal-body" id="modal-team-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="UI.closeModal('modal-team')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     MODAL ITEM EN COMBATE
+════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-combat-item">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">🎒 Usar objeto</div>
+      <button class="modal-close" onclick="UI.closeModal('modal-combat-item')">✕</button>
+    </div>
+    <div class="modal-body" id="modal-combat-item-body">Sin objetos consumibles.</div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="UI.closeModal('modal-combat-item')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     MODAL SHENRON
+════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-shenron">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" style="color:var(--green);">🐉 ¡Shenron ha aparecido!</div>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--txt2);margin-bottom:1rem;font-size:.9rem;">Has reunido las 7 Dragon Balls. Shenron desciende del cielo. ¿Cuál es tu deseo?</p>
+      <div id="shenron-wishes" style="display:flex;flex-direction:column;gap:.5rem;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ════════════════════════════════════════════════════════════════
+   DATOS — PERSONAJES
+════════════════════════════════════════════════════════════════ */
+const CHARACTERS = {
+  goku: {
+    id: 'goku',
+    name: 'Goku Niño',
+    avatar: '🐒',
+    style: 'Combate físico',
+    desc: 'Potencia bruta y instinto salvaje. Domina el cuerpo a cuerpo y aprende técnicas poderosas.',
+    baseStats: { hp: 80, maxHp: 80, atk: 14, def: 8, spd: 12, ki: 40, maxKi: 40 },
+    statColors: { hp: 80, atk: 70, def: 40, spd: 60, ki: 50 }, // % para barras
+    passive: { name: 'Cola de Mono', desc: '10% de probabilidad de esquivar ataques físicos.' },
+    techniques: [
+      { id: 'punch', name: 'Puñetazo Salvaje', type: 'fisica', cost: 0, mult: 1.4, cooldown: 0, desc: 'Ataque físico potente.', emoji: '👊' },
+      { id: 'kamehameha', name: 'Kamehameha', type: 'ki', cost: 20, mult: 2.2, cooldown: 2, missChance: 0.15, desc: 'La ola de energía del Maestro Roshi. Puede fallar.', emoji: '🌊' }
+    ],
+    learnableTechs: ['bastonstrike', 'stonehead', 'janken']
+  },
+  krillin: {
+    id: 'krillin',
+    name: 'Krillin Niño',
+    avatar: '🥋',
+    style: 'Técnico',
+    desc: 'Disciplinado y veloz. Técnicas costosas pero devastadoras. El más hábil del Templo Orin.',
+    baseStats: { hp: 65, maxHp: 65, atk: 11, def: 10, spd: 14, ki: 50, maxKi: 50 },
+    statColors: { hp: 65, atk: 55, def: 50, spd: 70, ki: 65 },
+    passive: { name: 'Técnico', desc: 'Todas las técnicas cuestan un 10% menos de Ki.' },
+    techniques: [
+      { id: 'quickstrike', name: 'Golpe Rápido', type: 'fisica', cost: 0, mult: 1.2, cooldown: 0, priority: true, desc: 'Actúa siempre primero, independientemente de la velocidad.', emoji: '⚡' },
+      { id: 'kienzan', name: 'Kienzan', type: 'ki', cost: 25, mult: 2.8, cooldown: 2, missChance: 0.25, desc: 'Disco de energía afilado. Daño enorme, pero difícil de controlar.', emoji: '🌀' }
+    ],
+    learnableTechs: ['afterimage', 'scatter_shot', 'turtle_stance']
+  },
+  bulma: {
+    id: 'bulma',
+    name: 'Bulma',
+    avatar: '💙',
+    style: 'Utilidad / Soporte',
+    desc: 'Escasa ofensiva pero gran ventaja táctica. Tecnología, objetos y el Radar del Dragón como armas.',
+    baseStats: { hp: 50, maxHp: 50, atk: 4, def: 6, spd: 10, ki: 30, maxKi: 30 },
+    statColors: { hp: 50, atk: 20, def: 30, spd: 50, ki: 40 },
+    passive: { name: 'Inventiva', desc: 'Las cápsulas Hoi-Poi garantizan un objeto extra una vez por mapa.' },
+    techniques: [
+      { id: 'pistol', name: 'Pistola', type: 'fisica', cost: 0, mult: 1.6, cooldown: 0, pierceDef: 0.3, desc: 'Disparo que ignora el 30% de la defensa enemiga.', emoji: '🔫' },
+      { id: 'bribe', name: 'Soborno', type: 'soporte', cost: 0, mult: 0, cooldown: 3, fleeChance: 0.35, desc: '35% de probabilidad de terminar el combate inmediatamente (no funciona en bosses).', emoji: '💰' }
+    ],
+    learnableTechs: ['capsule_robot', 'dragon_radar', 'overclock']
+  }
+};
+
+/* ════════════════════════════════════════════════════════════════
+   DATOS — TÉCNICAS APRENDIBLES
+════════════════════════════════════════════════════════════════ */
+const LEARNABLE_TECHS = {
+  bastonstrike: { id: 'bastonstrike', name: 'Bastón Giratorio', type: 'fisica', cost: 10, mult: 1.8, cooldown: 1, desc: 'Ataque en área con el Bastón Mágico.', emoji: '🦯', needsItem: 'staff' },
+  stonehead:    { id: 'stonehead', name: 'Cabeza de Piedra', type: 'pasiva', cost: 0, mult: 0, cooldown: 0, defBonus: 0.15, desc: 'Pasiva: aumenta la DEF un 15%.', emoji: '💪' },
+  janken:       { id: 'janken', name: 'Jan-Ken-Pon', type: 'fisica', cost: 5, mult: 2.0, cooldown: 1, desc: 'El truco favorito de Goku. Golpe de piedra sorpresivo.', emoji: '✊' },
+  afterimage:   { id: 'afterimage', name: 'Afterimage', type: 'soporte', cost: 15, mult: 0, cooldown: 3, evadeNext: true, desc: 'Crea un señuelo. Esquiva el siguiente ataque con certeza.', emoji: '👤' },
+  scatter_shot: { id: 'scatter_shot', name: 'Disparo en ráfaga', type: 'ki', cost: 20, mult: 1.5, cooldown: 2, desc: 'Múltiples proyectiles de Ki. Ataque sólido.', emoji: '✨' },
+  turtle_stance:{ id: 'turtle_stance', name: 'Postura Tortuga', type: 'soporte', cost: 10, mult: 0, cooldown: 3, shieldTurns: 2, desc: 'Reduce el daño recibido un 40% durante 2 turnos.', emoji: '🐢' },
+  capsule_robot:{ id: 'capsule_robot', name: 'Robot Cápsula', type: 'soporte', cost: 20, mult: 0, cooldown: 4, absorbHit: true, desc: 'Invoca un robot que absorbe el siguiente ataque enemigo.', emoji: '🤖' },
+  dragon_radar: { id: 'dragon_radar', name: 'Radar del Dragón', type: 'pasiva', cost: 0, mult: 0, cooldown: 0, dbBonus: true, desc: 'Pasiva: aumenta la probabilidad de encontrar Dragon Balls.', emoji: '📡' },
+  overclock:    { id: 'overclock', name: 'Turbo Cápsula', type: 'soporte', cost: 15, mult: 0, cooldown: 4, spdBoostTurns: 3, desc: 'Aumenta la SPD un 50% durante 3 turnos.', emoji: '⚙️' }
+};
+
+/* ════════════════════════════════════════════════════════════════
+   DATOS — ENEMIGOS (Mapa 1)
+════════════════════════════════════════════════════════════════ */
+const ENEMIES = [
+  { id: 'wolf', name: 'Lobo Salvaje', avatar: '🐺', type: 'normal',
+    baseStats: { hp: 30, atk: 8, def: 3, spd: 9 },
+    loot: 'Nada', desc: 'Un lobo hambriento de la Montaña 439.' },
+  { id: 'bandit', name: 'Bandido', avatar: '🗡️', type: 'normal',
+    baseStats: { hp: 38, atk: 10, def: 5, spd: 7 },
+    loot: 'Carne', desc: 'Un ladrón de caminos.' },
+  { id: 'oolong', name: 'Oolong', avatar: '🐷', type: 'special',
+    baseStats: { hp: 45, atk: 9, def: 6, spd: 8 },
+    loot: 'Hoipoi', desc: 'El cerdo transformista que aterrorizaba una aldea.' },
+  { id: 'yamcha', name: 'Yamcha', avatar: '🏜️', type: 'special',
+    baseStats: { hp: 55, atk: 13, def: 7, spd: 11 },
+    loot: 'Hoipoi', desc: 'El bandido del desierto busca las Dragon Balls.' },
+  { id: 'pilaf_soldier', name: 'Soldado de Pilaf', avatar: '💂', type: 'normal',
+    baseStats: { hp: 42, atk: 11, def: 8, spd: 8 },
+    loot: 'Nada', desc: 'Soldado de la banda del Emperador Pilaf.' },
+  { id: 'mai', name: 'Mai', avatar: '🔫', type: 'miniboss',
+    baseStats: { hp: 60, atk: 12, def: 9, spd: 12 },
+    loot: 'Hoipoi', desc: 'La agente de Pilaf, armada y peligrosa.' },
+  { id: 'shu', name: 'Shu', avatar: '🥷', type: 'miniboss',
+    baseStats: { hp: 65, atk: 14, def: 10, spd: 13 },
+    loot: 'Hoipoi', desc: 'El ninja de Pilaf. Rápido y escurridizo.' }
+];
+
+/* Boss */
+const BOSS_PILAF = {
+  id: 'pilaf',
+  name: 'Pilaf en su Meka',
+  avatar: '🤖',
+  isBoss: true,
+  baseStats: { hp: 120, atk: 16, def: 12, spd: 9 },
+  phase2Trigger: 0.3, // % hp para activar fase 2
+  phase2DefBonus: 0.5,
+  phase2Active: false,
+  desc: 'El Emperador Pilaf dentro de su poderosa armadura mecánica. Cuando su vida baja, la máquina entra en modo berserk.',
+  lore: 'El Emperador Pilaf lleva años buscando las Dragon Balls para dominar el mundo. Ahora está a punto de lograrlo... a menos que alguien lo detenga.',
+  emoji: '🤖'
+};
+
+/* ════════════════════════════════════════════════════════════════
+   DATOS — ITEMS
+════════════════════════════════════════════════════════════════ */
+const ITEMS = {
+  senzu:   { id: 'senzu',   name: 'Judía Senzu',    emoji: '🌱', type: 'consumable', desc: 'Restaura el HP al máximo.', effect: 'fullheal' },
+  meat:    { id: 'meat',    name: 'Carne',           emoji: '🍖', type: 'consumable', desc: 'Recupera 30 HP.',           effect: 'heal30' },
+  pillule: { id: 'pillule', name: 'Pastilla Médica', emoji: '💊', type: 'consumable', desc: 'Cura estados alterados.',   effect: 'cure' },
+  roshi:   { id: 'roshi',   name: 'Caparazón de Roshi', emoji: '🐢', type: 'passive', desc: '+20% DEF permanente.', effect: 'defbuff', value: 0.2 },
+  kinton:  { id: 'kinton',  name: 'Nube Kinton',     emoji: '☁️', type: 'passive', desc: '+15% SPD permanente.',       effect: 'spdbuff', value: 0.15 },
+  staff:   { id: 'staff',   name: 'Bastón Mágico',   emoji: '🦯', type: 'passive', desc: 'Desbloquea Bastón Giratorio en Goku.', effect: 'unlocktech', tech: 'bastonstrike' },
+  radar:   { id: 'radar',   name: 'Radar del Dragón',emoji: '📡', type: 'passive', desc: '+30% prob. de Dragon Balls.',effect: 'dbbuff', value: 0.3 }
+};
+
+/* ════════════════════════════════════════════════════════════════
+   DATOS — EVENTOS
+════════════════════════════════════════════════════════════════ */
+const EVENTS = [
+  {
+    id: 'roshi_teaching',
+    icon: '🏖️',
+    title: 'El Maestro Roshi',
+    eyebrow: 'Encuentro',
+    body: 'Un anciano excéntrico con gafas de sol aparece en el camino. Dice ser el Maestro Tortuga, el maestro de la Ola Kamehameha. Te ofrece enseñarte algo valioso... si demuestras que lo mereces.',
+    choices: [
+      { text: '⚡ Acepta el entrenamiento (aprende una técnica)', action: 'learn_tech', effect: { type: 'learn' } },
+      { text: '❤️ Pide una cura (recupera 25 HP)', action: 'heal', effect: { type: 'heal', val: 25 } }
+    ]
+  },
+  {
+    id: 'village_elder',
+    icon: '🏘️',
+    title: 'Aldea en Peligro',
+    eyebrow: 'Encuentro',
+    body: 'Una aldea ha sido saqueada por un monstruo. Los aldeanos te ofrecen una recompensa si les ayudas. Puedes enfrentarte al monstruo ahora o seguir tu camino y buscar las Dragon Balls.',
+    choices: [
+      { text: '⚔️ Ayudar a la aldea (combate + recompensa Hoi-Poi)', action: 'fight_monster', effect: { type: 'fight_reward' } },
+      { text: '🏃 Seguir el camino (recuperar 15 HP)', action: 'flee_village', effect: { type: 'heal', val: 15 } }
+    ]
+  },
+  {
+    id: 'desert_shortcut',
+    icon: '🏜️',
+    title: 'Atajo del Desierto',
+    eyebrow: 'Elección',
+    body: 'Ante ti hay dos caminos. El atajo por el desierto es peligroso pero te ahorrará tiempo. La ruta larga es segura pero te dejará expuesto más tiempo. ¿Qué decides?',
+    choices: [
+      { text: '⚡ Atajo peligroso (mejora de estadística)', action: 'risky_shortcut', effect: { type: 'upgrade_stat' } },
+      { text: '🛡️ Ruta segura (curación completa de un compañero)', action: 'safe_route', effect: { type: 'heal_party', val: 20 } }
+    ]
+  },
+  {
+    id: 'mystery_capsule',
+    icon: '📦',
+    title: 'Cápsula Misteriosa',
+    eyebrow: 'Descubrimiento',
+    body: 'Encuentras una cápsula Hoi-Poi abandonada en el camino. Está marcada con un símbolo extraño. Podría contener algo útil... o algo peligroso.',
+    choices: [
+      { text: '📦 Abrir la cápsula (Hoi-Poi)', action: 'open_capsule', effect: { type: 'hoipoi' } },
+      { text: '🚶 Ignorarla (seguir adelante)', action: 'ignore', effect: { type: 'nothing' } }
+    ]
+  }
+];
+
+/* ════════════════════════════════════════════════════════════════
+   HOI-POI — TABLA DE RECOMPENSAS
+════════════════════════════════════════════════════════════════ */
+const HOIPOI_TABLE = [
+  { weight: 35, type: 'item',     generate: () => {
+    const pool = ['senzu','meat','pillule','roshi','kinton','radar'];
+    return ITEMS[pool[Math.floor(Math.random() * pool.length)]];
+  }},
+  { weight: 25, type: 'stat',     generate: () => {
+    const stats = [
+      { stat:'atk', amount:3, desc:'Tu ataque aumenta en 3.', emoji:'⚔️', name:'Aumento de Ataque' },
+      { stat:'def', amount:3, desc:'Tu defensa aumenta en 3.', emoji:'🛡️', name:'Aumento de Defensa' },
+      { stat:'hp',  amount:15, desc:'Tu HP máximo aumenta en 15.', emoji:'❤️', name:'Vitalidad' },
+      { stat:'spd', amount:2, desc:'Tu velocidad aumenta en 2.', emoji:'💨', name:'Agilidad' },
+      { stat:'ki',  amount:10, desc:'Tu Ki máximo aumenta en 10.', emoji:'⚡', name:'Energía Ki' }
+    ];
+    return stats[Math.floor(Math.random() * stats.length)];
+  }},
+  { weight: 20, type: 'tech',     generate: (charId) => {
+    const char = CHARACTERS[charId];
+    const learnable = char.learnableTechs.filter(t => {
+      const tech = LEARNABLE_TECHS[t];
+      return tech && !State.player.techniques.find(pt => pt.id === t);
+    });
+    if (learnable.length === 0) return null;
+    const techId = learnable[Math.floor(Math.random() * learnable.length)];
+    return LEARNABLE_TECHS[techId];
+  }},
+  { weight: 12, type: 'companion', generate: () => {
+    if (State.companions.length >= 2) return null;
+    const pool = [
+      { id:'oolong_c', name:'Oolong', avatar:'🐷', stats:{ hp:35,maxHp:35,atk:5,def:8,spd:7,ki:20,maxKi:20 }, passive:'Transformación: 20% de esquivar el primer ataque.' },
+      { id:'puar_c',   name:'Puar',   avatar:'🐱', stats:{ hp:25,maxHp:25,atk:4,def:5,spd:15,ki:15,maxKi:15 }, passive:'Scout: revela el tipo de la siguiente casilla.' }
+    ];
+    const available = pool.filter(c => !State.companions.find(sc => sc.id === c.id));
+    if (available.length === 0) return null;
+    return available[Math.floor(Math.random() * available.length)];
+  }},
+  { weight: 8,  type: 'dragonball', generate: () => {
+    const missing = State.dragonBalls.map((v,i) => !v ? i : -1).filter(i => i >= 0);
+    if (missing.length === 0) return null;
+    return missing[Math.floor(Math.random() * missing.length)];
+  }}
+];
+
+/* ════════════════════════════════════════════════════════════════
+   ESTADO GLOBAL
+════════════════════════════════════════════════════════════════ */
+const State = {
+  player: null,
+  companions: [],
+  inventory: [],
+  dragonBalls: [false,false,false,false,false,false,false],
+  map: null,
+  currentNode: null,
+  combatState: null,
+  stats: { fightsWon: 0, bossesDefeated: 0, hoipoiOpened: 0, dragonBallsFound: 0, nodesVisited: 0 },
+  bulmaBonus: false, // para la pasiva de Bulma
+  phase: 'intro' // intro | char | map | combat | hoipoi | upgrade | event | boss-intro | result
+};
+
+/* ════════════════════════════════════════════════════════════════
+   UTILIDADES
+════════════════════════════════════════════════════════════════ */
+const Utils = {
+  rand: (min, max) => Math.floor(Math.random() * (max - min + 1)) + min,
+  randFloat: () => Math.random(),
+  clamp: (v, min, max) => Math.min(Math.max(v, min), max),
+  weightedRandom(table) {
+    const total = table.reduce((s, e) => s + e.weight, 0);
+    let r = Math.random() * total;
+    for (const entry of table) {
+      r -= entry.weight;
+      if (r <= 0) return entry;
+    }
+    return table[table.length - 1];
+  },
+  deepClone: obj => JSON.parse(JSON.stringify(obj)),
+  pct: (val, max) => Utils.clamp(Math.round((val / Math.max(max, 1)) * 100), 0, 100)
+};
+
+/* ════════════════════════════════════════════════════════════════
+   UI HELPERS
+════════════════════════════════════════════════════════════════ */
+const UI = {
+  show(screenId) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    const el = document.getElementById('screen-' + screenId);
+    if (el) el.classList.add('active');
+  },
+
+  toast(msg, type = 'info') {
+    const c = document.getElementById('toast-container');
+    const t = document.createElement('div');
+    t.className = 'toast'; t.textContent = msg;
+    if (type === 'good') t.style.borderColor = 'var(--green)';
+    if (type === 'bad')  t.style.borderColor = 'var(--red)';
+    if (type === 'gold') t.style.borderColor = 'var(--gold)';
+    if (type === 'ki')   t.style.borderColor = 'var(--ki)';
+    c.appendChild(t);
+    setTimeout(() => { t.classList.add('fade-out'); setTimeout(() => t.remove(), 350); }, 2600);
+  },
+
+  floatDmg(text, targetEl, cls = 'phys') {
+    const r = targetEl.getBoundingClientRect();
+    const d = document.createElement('div');
+    d.className = `dmg-float ${cls}`; d.textContent = text;
+    d.style.left = (r.left + r.width / 2 - 20) + 'px';
+    d.style.top  = (r.top - 10) + 'px';
+    document.body.appendChild(d);
+    setTimeout(() => d.remove(), 950);
+  },
+
+  showModal(id) { document.getElementById(id).classList.add('open'); },
+  closeModal(id) { document.getElementById(id).classList.remove('open'); },
+
+  showInventoryModal() {
+    const body = document.getElementById('modal-inventory-body');
+    if (!State.inventory.length) {
+      body.innerHTML = '<p style="color:var(--txt3);font-size:.85rem;">El inventario está vacío.</p>';
+    } else {
+      body.innerHTML = State.inventory.map((item, i) => `
+        <div style="display:flex;align-items:center;gap:.8rem;padding:.7rem;background:var(--bg3);border-radius:var(--rad);border:1px solid var(--border);margin-bottom:.35rem;">
+          <span style="font-size:1.4rem;">${item.emoji}</span>
+          <div style="flex:1;">
+            <div style="font-size:.85rem;font-weight:600;color:var(--txt);">${item.name}</div>
+            <div style="font-size:.75rem;color:var(--txt2);">${item.desc}</div>
+          </div>
+          <span style="font-size:.7rem;padding:.15rem .4rem;border-radius:20px;background:${item.type==='consumable'?'rgba(76,175,125,.2)':'rgba(155,93,229,.2)'};color:${item.type==='consumable'?'var(--green)':'var(--ki)'};">${item.type === 'consumable' ? 'Uso' : 'Pasivo'}</span>
+        </div>`).join('');
+    }
+    this.showModal('modal-inventory');
+  },
+
+  showTeamModal() {
+    const p = State.player;
+    const body = document.getElementById('modal-team-body');
+    const techHtml = p.techniques.map(t =>
+      `<span class="tech-pill">${t.emoji} ${t.name}${t.cost > 0 ? ' (' + t.cost + ' Ki)' : ''}</span>`
+    ).join('');
+    let html = `
+      <div style="background:var(--bg3);border-radius:var(--rad);border:1px solid var(--border);padding:1rem;margin-bottom:.8rem;">
+        <div style="display:flex;align-items:center;gap:.8rem;margin-bottom:.8rem;">
+          <span style="font-size:2rem;">${p.avatar}</span>
+          <div>
+            <div style="font-weight:600;color:var(--txt);">${p.name}</div>
+            <div style="font-size:.75rem;color:var(--gold);">Nivel ${p.level}</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem;font-size:.78rem;margin-bottom:.7rem;">
+          ${[['HP', Math.max(0,p.hp) + '/' + p.maxHp], ['Ki', p.ki + '/' + p.maxKi],
+             ['ATK', Math.round(p.atk)], ['DEF', Math.round(p.def)], ['SPD', Math.round(p.spd)]
+            ].map(([k,v]) => `<div style="background:var(--bg);border-radius:4px;padding:.3rem .5rem;border:1px solid var(--border);">
+              <span style="color:var(--txt3);">${k}</span> <b style="color:var(--txt);">${v}</b></div>`).join('')}
+        </div>
+        <div style="font-size:.7rem;color:var(--txt3);margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.05em;">Técnicas</div>
+        <div style="margin-bottom:.6rem;">${techHtml}</div>
+        <div style="padding:.5rem .7rem;background:var(--bg);border-radius:4px;border-left:3px solid var(--gold);font-size:.75rem;color:var(--txt2);">
+          <strong style="color:var(--gold);">⚡ ${p.passive.name}</strong><br>${p.passive.desc}
+        </div>
+      </div>`;
+    State.companions.forEach(c => {
+      html += `<div style="background:var(--bg3);border-radius:var(--rad);border:1px solid var(--border);padding:.8rem;margin-bottom:.4rem;">
+        <div style="display:flex;align-items:center;gap:.7rem;margin-bottom:.5rem;">
+          <span style="font-size:1.5rem;">${c.avatar}</span>
+          <div><div style="font-weight:600;color:var(--txt);">${c.name}</div><div style="font-size:.7rem;color:var(--txt3);">Compañero</div></div>
+        </div>
+        <div style="font-size:.75rem;color:var(--txt2);margin-bottom:.4rem;">
+          HP ${c.stats.hp}/${c.stats.maxHp} · ATK ${c.stats.atk} · DEF ${c.stats.def} · SPD ${c.stats.spd}
+        </div>
+        <div style="font-size:.73rem;color:var(--ki);">${c.passive}</div>
+      </div>`;
+    });
+    if (!State.companions.length) {
+      html += '<div style="font-size:.8rem;color:var(--txt3);">Sin compañeros en el equipo.</div>';
+    }
+    body.innerHTML = html;
+    this.showModal('modal-team');
+  },
+
+  updateSidebar() {
+    const p = State.player; if (!p) return;
+    document.getElementById('sb-avatar').textContent = p.avatar;
+    document.getElementById('sb-name').textContent = p.name;
+    document.getElementById('sb-level').textContent = 'Nivel ' + p.level;
+
+    const hpPct = Utils.pct(p.hp, p.maxHp);
+    document.getElementById('sb-hp-txt').textContent = `${Math.max(0,p.hp)}/${p.maxHp}`;
+    const hpBar = document.getElementById('sb-hp-bar');
+    hpBar.style.width = hpPct + '%';
+    hpBar.style.background = hpPct > 50 ? 'var(--hp-color)' : hpPct > 25 ? 'var(--orange)' : 'var(--red)';
+
+    document.getElementById('sb-ki-txt').textContent = `${p.ki}/${p.maxKi}`;
+    document.getElementById('sb-ki-bar').style.width = Utils.pct(p.ki, p.maxKi) + '%';
+
+    // Mini stats
+    const sm = document.getElementById('sb-stats-mini');
+    if (sm) {
+      sm.innerHTML = [['ATK', Math.round(p.atk)], ['DEF', Math.round(p.def)], ['SPD', Math.round(p.spd)]]
+        .map(([k,v]) => `<span style="font-size:.68rem;color:var(--txt3);background:var(--bg3);padding:.15rem .4rem;border-radius:4px;border:1px solid var(--border);">${k} <b style="color:var(--txt2);">${v}</b></span>`)
+        .join('');
+    }
+
+    // Compañeros
+    const cl = document.getElementById('sb-companions');
+    const cc = document.getElementById('sb-companions-count');
+    if (cc) cc.textContent = `(${State.companions.length}/2)`;
+    if (!State.companions.length) {
+      cl.innerHTML = '<div style="font-size:.78rem;color:var(--txt3);">Sin compañeros aún.</div>';
+    } else {
+      cl.innerHTML = State.companions.map(c => `
+        <div class="companion-row">
+          <span class="companion-avatar">${c.avatar}</span>
+          <div class="companion-info">
+            <div class="companion-name">${c.name}</div>
+            <div class="companion-hp-bar"><div class="companion-hp-fill" style="width:${Utils.pct(c.stats.hp, c.stats.maxHp)}%"></div></div>
+          </div>
+          <span style="font-size:.7rem;color:var(--txt3);">${c.stats.hp}</span>
+        </div>`).join('');
+    }
+
+    // Inventario
+    const inv = document.getElementById('sb-inventory');
+    let slots = '';
+    for (let i = 0; i < 6; i++) {
+      const item = State.inventory[i];
+      slots += item
+        ? `<div class="inv-slot" title="${item.name}: ${item.desc}">${item.emoji}</div>`
+        : `<div class="inv-slot empty">·</div>`;
+    }
+    inv.innerHTML = slots;
+
+    // Dragon Balls
+    const dbs = document.getElementById('sb-dragonballs');
+    const found = State.dragonBalls.filter(Boolean).length;
+    dbs.innerHTML = State.dragonBalls.map((f, i) => `
+      <div class="db-mini ${f ? 'found' : ''}" title="Esfera de ${i+1} estrella${i>0?'s':''}">
+        <span class="db-mini-stars">${'★'.repeat(Math.min(i+1, 4))}</span>
+      </div>`).join('');
+  },
+
+  updateCombatUI() {
+    const cs = State.combatState; if (!cs) return;
+    const p = cs.player, e = cs.enemy;
+
+    document.getElementById('cf-player-avatar').textContent = p.avatar;
+    document.getElementById('cf-player-name').textContent = p.name;
+    document.getElementById('cf-player-level').textContent = 'Nivel ' + p.level;
+    document.getElementById('cf-player-hp-txt').textContent = `${Math.max(0,p.hp)}/${p.maxHp}`;
+    document.getElementById('cf-player-ki-txt').textContent = `${p.ki}/${p.maxKi}`;
+    document.getElementById('cf-player-ki-bar').style.width = Utils.pct(p.ki, p.maxKi) + '%';
+
+    const hpPct = Utils.pct(p.hp, p.maxHp);
+    const hpBar = document.getElementById('cf-player-hp-bar');
+    hpBar.style.width = hpPct + '%';
+    hpBar.style.background = hpPct > 50 ? 'var(--hp-color)' : hpPct > 25 ? 'var(--orange)' : 'var(--red)';
+
+    // Efectos activos jugador
+    const efEl = document.getElementById('cf-player-effects');
+    if (efEl) {
+      const effs = [];
+      if (cs.playerEffects.evadeNext) effs.push('<span class="tag tag-ki">👤 Afterimage</span>');
+      if (cs.playerEffects.shield > 0) effs.push(`<span class="tag tag-green">🛡️ Escudo ×${cs.playerEffects.shield}</span>`);
+      if (cs.playerEffects.absorb)     effs.push('<span class="tag tag-ki">🤖 Robot</span>');
+      if (cs.playerEffects.spdBoost > 0) effs.push(`<span class="tag tag-orange">💨 Turbo ×${cs.playerEffects.spdBoost}</span>`);
+      efEl.innerHTML = effs.join('');
+    }
+
+    // Compañeros reserva
+    const reserve = document.getElementById('cf-team-reserve');
+    reserve.innerHTML = State.companions.map(c => `
+      <div style="display:flex;align-items:center;gap:.5rem;padding:.3rem .5rem;background:var(--bg3);border-radius:var(--rad);border:1px solid var(--border);">
+        <span>${c.avatar}</span>
+        <span style="font-size:.75rem;color:var(--txt2);flex:1;">${c.name}</span>
+        <div style="width:55px;height:4px;background:var(--bg);border-radius:2px;overflow:hidden;">
+          <div style="height:100%;background:var(--hp-color);width:${Utils.pct(c.stats.hp, c.stats.maxHp)}%"></div>
+        </div>
+        <span style="font-size:.68rem;color:var(--txt3);">${c.stats.hp}</span>
+      </div>`).join('');
+
+    // Enemigo
+    document.getElementById('cf-enemy-avatar').textContent = e.avatar;
+    document.getElementById('cf-enemy-name').textContent = e.name;
+    document.getElementById('cf-enemy-level').textContent = 'Nivel ' + e.level;
+    document.getElementById('cf-enemy-hp-txt').textContent = `${Math.max(0,e.hp)}/${e.maxHp}`;
+    document.getElementById('cf-enemy-hp-bar').style.width = Utils.pct(e.hp, e.maxHp) + '%';
+
+    const descEl = document.getElementById('cf-enemy-desc');
+    if (descEl) descEl.textContent = e.desc || '';
+
+    const enemyStatus = document.getElementById('cf-enemy-status');
+    enemyStatus.innerHTML = e.phase2Active
+      ? '<span class="tag tag-orange">⚠ Modo Berserk — DEF ×1.5</span>'
+      : '';
+
+    document.getElementById('btn-flee').disabled = !!e.isBoss;
+    this.renderTechButtons();
+  },
+
+  renderTechButtons() {
+    const cs = State.combatState; if (!cs) return;
+    const panel = document.getElementById('combat-techs-panel');
+    const techs = cs.player.techniques.filter(t => t.type !== 'pasiva');
+    if (!techs.length) {
+      panel.innerHTML = '<div style="font-size:.8rem;color:var(--txt3);padding:.4rem;">Sin técnicas adicionales.</div>';
+      return;
+    }
+    panel.innerHTML = techs.map(tech => {
+      const cd = cs.cooldowns[tech.id] || 0;
+      const canUse = cs.player.ki >= tech.cost && cd === 0;
+      return `
+        <button class="tech-btn" onclick="Combat.useTech('${tech.id}')" ${canUse ? '' : 'disabled'}>
+          <span>${tech.emoji}</span>
+          <span style="flex:1;">${tech.name}</span>
+          ${tech.cost > 0 ? `<span class="tech-cost">${tech.cost} Ki</span>` : ''}
+          ${cd > 0 ? `<span class="tech-cd"> CD:${cd}</span>` : ''}
+        </button>`;
+    }).join('');
+  },
+
+  addLog(msg, cls = '') {
+    const log = document.getElementById('combat-log');
+    const line = document.createElement('div');
+    line.className = 'log-line ' + cls;
+    line.textContent = msg;
+    log.appendChild(line);
+    log.scrollTop = log.scrollHeight;
+    while (log.children.length > 22) log.removeChild(log.firstChild);
+  }
+};
+
+
+  toast(msg, type = 'info') {
+    const c = document.getElementById('toast-container');
+    const t = document.createElement('div');
+    t.className = 'toast';
+    t.textContent = msg;
+    if (type === 'good')  t.style.borderColor = 'var(--green)';
+    if (type === 'bad')   t.style.borderColor = 'var(--red)';
+    if (type === 'gold')  t.style.borderColor = 'var(--gold)';
+    c.appendChild(t);
+    setTimeout(() => { t.classList.add('fade-out'); setTimeout(() => t.remove(), 350); }, 2500);
+  },
+
+  floatDmg(text, x, y, cls = 'phys') {
+    const d = document.createElement('div');
+    d.className = `dmg-float ${cls}`;
+    d.textContent = text;
+    d.style.left = x + 'px';
+    d.style.top = y + 'px';
+    document.body.appendChild(d);
+    setTimeout(() => d.remove(), 950);
+  },
+
+  showModal(id) { document.getElementById(id).classList.add('open'); },
+  closeModal(id) { document.getElementById(id).classList.remove('open'); },
+
+  showInventoryModal() {
+    const body = document.getElementById('modal-inventory-body');
+    if (State.inventory.length === 0) {
+      body.innerHTML = '<p style="color:var(--txt3);font-size:.88rem;">El inventario está vacío.</p>';
+    } else {
+      body.innerHTML = State.inventory.map(item => `
+        <div style="display:flex;align-items:center;gap:.8rem;padding:.6rem;background:var(--bg3);border-radius:var(--rad);border:1px solid var(--border);margin-bottom:.35rem;">
+          <span style="font-size:1.4rem;">${item.emoji}</span>
+          <div>
+            <div style="font-size:.85rem;font-weight:600;color:var(--txt);">${item.name}</div>
+            <div style="font-size:.75rem;color:var(--txt2);">${item.desc}</div>
+          </div>
+          <span style="margin-left:auto;font-size:.7rem;color:var(--txt3);text-transform:uppercase;">${item.type === 'consumable' ? 'Uso' : 'Pasivo'}</span>
+        </div>
+      `).join('');
+    }
+    this.showModal('modal-inventory');
+  },
+
+  /* Actualiza sidebar del mapa */
+  updateSidebar() {
+    const p = State.player;
+    if (!p) return;
+    document.getElementById('sb-avatar').textContent = p.avatar;
+    document.getElementById('sb-name').textContent = p.name;
+    document.getElementById('sb-level').textContent = 'Nivel ' + p.level;
+    document.getElementById('sb-hp-txt').textContent = `${p.hp}/${p.maxHp}`;
+    document.getElementById('sb-hp-bar').style.width = Utils.pct(p.hp, p.maxHp) + '%';
+    document.getElementById('sb-ki-txt').textContent = `${p.ki}/${p.maxKi}`;
+    document.getElementById('sb-ki-bar').style.width = Utils.pct(p.ki, p.maxKi) + '%';
+
+    // Compañeros
+    const cl = document.getElementById('sb-companions');
+    if (State.companions.length === 0) {
+      cl.innerHTML = '<div style="font-size:.78rem;color:var(--txt3);">Sin compañeros aún.</div>';
+    } else {
+      cl.innerHTML = State.companions.map(c => `
+        <div class="companion-row">
+          <span class="companion-avatar">${c.avatar}</span>
+          <div class="companion-info">
+            <div class="companion-name">${c.name}</div>
+            <div class="companion-hp-bar"><div class="companion-hp-fill" style="width:${Utils.pct(c.stats.hp, c.stats.maxHp)}%"></div></div>
+          </div>
+          <span style="font-size:.7rem;color:var(--txt3);">${c.stats.hp}/${c.stats.maxHp}</span>
+        </div>
+      `).join('');
+    }
+
+    // Inventario rápido
+    const inv = document.getElementById('sb-inventory');
+    const slots = [];
+    for (let i = 0; i < 6; i++) {
+      const item = State.inventory[i];
+      if (item) {
+        slots.push(`<div class="inv-slot" title="${item.name}">${item.emoji}</div>`);
+      } else {
+        slots.push(`<div class="inv-slot empty">·</div>`);
+      }
+    }
+    inv.innerHTML = slots.join('');
+
+    // Dragon Balls
+    const dbs = document.getElementById('sb-dragonballs');
+    dbs.innerHTML = State.dragonBalls.map((found, i) => `
+      <div class="db-mini ${found ? 'found' : ''}" title="${i+1} estrellas">
+        <span class="db-mini-stars">${'★'.repeat(i+1)}</span>
+      </div>
+    `).join('');
+  },
+
+  /* Actualiza barras de combate */
+  updateCombatUI() {
+    const cs = State.combatState;
+    if (!cs) return;
+    const p = cs.player;
+    const e = cs.enemy;
+
+    document.getElementById('cf-player-name').textContent = p.name;
+    document.getElementById('cf-player-level').textContent = 'Nivel ' + p.level;
+    document.getElementById('cf-player-avatar').textContent = p.avatar;
+    document.getElementById('cf-player-hp-txt').textContent = `${Math.max(0,p.hp)}/${p.maxHp}`;
+    document.getElementById('cf-player-hp-bar').style.width = Utils.pct(p.hp, p.maxHp) + '%';
+    document.getElementById('cf-player-ki-txt').textContent = `${p.ki}/${p.maxKi}`;
+    document.getElementById('cf-player-ki-bar').style.width = Utils.pct(p.ki, p.maxKi) + '%';
+
+    document.getElementById('cf-enemy-name').textContent = e.name;
+    document.getElementById('cf-enemy-level').textContent = 'Nivel ' + e.level;
+    document.getElementById('cf-enemy-avatar').textContent = e.avatar;
+    document.getElementById('cf-enemy-hp-txt').textContent = `${Math.max(0,e.hp)}/${e.maxHp}`;
+    document.getElementById('cf-enemy-hp-bar').style.width = Utils.pct(e.hp, e.maxHp) + '%';
+
+    // Cambiar color HP al bajar
+    const hpEl = document.getElementById('cf-player-hp-bar');
+    const pct = Utils.pct(p.hp, p.maxHp);
+    hpEl.style.background = pct > 50 ? 'var(--hp-color)' : pct > 25 ? 'var(--orange)' : 'var(--red)';
+
+    // Reserva
+    const reserve = document.getElementById('cf-team-reserve');
+    reserve.innerHTML = State.companions.map(c => `
+      <div style="display:flex;align-items:center;gap:.5rem;padding:.3rem .5rem;background:var(--bg3);border-radius:var(--rad);border:1px solid var(--border);">
+        <span>${c.avatar}</span>
+        <span style="font-size:.75rem;color:var(--txt2);">${c.name}</span>
+        <div style="flex:1;height:4px;background:var(--bg);border-radius:2px;overflow:hidden;margin-left:.3rem;">
+          <div style="height:100%;background:var(--hp-color);width:${Utils.pct(c.stats.hp, c.stats.maxHp)}%"></div>
+        </div>
+        <span style="font-size:.68rem;color:var(--txt3);">${c.stats.hp}</span>
+      </div>
+    `).join('');
+
+    // Estado boss fase 2
+    const enemyStatus = document.getElementById('cf-enemy-status');
+    if (e.phase2Active) {
+      enemyStatus.innerHTML = '<span class="tag tag-orange">⚠ Fase 2 — Modo Berserk</span>';
+    } else {
+      enemyStatus.innerHTML = '';
+    }
+
+    // Botones
+    document.getElementById('btn-flee').disabled = e.isBoss;
+
+    // Techs
+    this.renderTechButtons();
+  },
+
+  renderTechButtons() {
+    const cs = State.combatState;
+    if (!cs) return;
+    const panel = document.getElementById('combat-techs-panel');
+    const p = cs.player;
+    if (p.techniques.length <= 1) {
+      panel.innerHTML = '<div style="font-size:.8rem;color:var(--txt3);padding:.4rem;">No hay técnicas adicionales disponibles.</div>';
+      return;
+    }
+    panel.innerHTML = p.techniques.map(tech => {
+      const cd = cs.cooldowns[tech.id] || 0;
+      const canUse = p.ki >= tech.cost && cd === 0;
+      return `
+        <button class="tech-btn" onclick="Combat.useTech('${tech.id}')" ${canUse ? '' : 'disabled'}>
+          <span>${tech.emoji}</span>
+          <span>${tech.name}</span>
+          ${tech.cost > 0 ? `<span class="tech-cost">${tech.cost} Ki</span>` : ''}
+          ${cd > 0 ? `<span class="tech-cd">CD: ${cd}</span>` : ''}
+        </button>
+      `;
+    }).join('');
+  },
+
+  addLog(msg, cls = '') {
+    const log = document.getElementById('combat-log');
+    const line = document.createElement('div');
+    line.className = 'log-line ' + cls;
+    line.textContent = msg;
+    log.appendChild(line);
+    log.scrollTop = log.scrollHeight;
+    // Max 20 líneas
+    while (log.children.length > 20) log.removeChild(log.firstChild);
+  }
+};
+
+/* ════════════════════════════════════════════════════════════════
+   MAP ENGINE
+════════════════════════════════════════════════════════════════ */
+const MapEngine = {
+  COLS: 7,
+  ROWS: 4,
+  NODE_W: 90,
+  NODE_H: 100,
+  MARGIN_X: 60,
+  MARGIN_Y: 60,
+
+  /* Tipos de nodo por columna */
+  nodeTypesByCol(col) {
+    if (col === 0) return ['fight','fight','heal','fight'];
+    if (col === this.COLS - 1) return ['boss'];
+    if (col === this.COLS - 2) return ['heal','fight','event','upgrade'];
+    const pool = [
+      'fight','fight','fight',
+      'hoipoi','hoipoi',
+      'upgrade',
+      'heal','heal',
+      'event'
+    ];
+    return [pool[Utils.rand(0, pool.length - 1)]];
+  },
+
+  generate() {
+    const cols = this.COLS;
+    const rows = this.ROWS;
+    const nodes = [];
+    let id = 0;
+
+    // Generar nodos
+    for (let c = 0; c < cols; c++) {
+      const colNodes = [];
+      const numRows = c === cols - 1 ? 1 : rows;
+      for (let r = 0; r < numRows; r++) {
+        const types = this.nodeTypesByCol(c);
+        const type = types[Math.min(r, types.length - 1)];
+        colNodes.push({
+          id: id++,
+          col: c, row: r,
+          type,
+          visited: false,
+          reachable: c === 0,
+          connections: [] // ids de nodos en col+1 conectados
+        });
+      }
+      nodes.push(colNodes);
+    }
+
+    // Conectar columnas
+    for (let c = 0; c < cols - 1; c++) {
+      const cur = nodes[c];
+      const nxt = nodes[c + 1];
+      // Cada nodo se conecta a 1 o 2 del siguiente
+      for (const node of cur) {
+        const numConns = Utils.rand(1, Math.min(2, nxt.length));
+        const pool = [...nxt];
+        Utils.shuffle ? Utils.shuffle(pool) : pool.sort(() => Math.random() - .5);
+        const chosen = pool.slice(0, numConns);
+        chosen.forEach(n => {
+          if (!node.connections.includes(n.id)) node.connections.push(n.id);
+        });
+      }
+      // Asegurar que cada nodo del siguiente está conectado al menos una vez
+      for (const nxtNode of nxt) {
+        const hasIncoming = cur.some(n => n.connections.includes(nxtNode.id));
+        if (!hasIncoming) {
+          const src = cur[Utils.rand(0, cur.length - 1)];
+          if (!src.connections.includes(nxtNode.id)) src.connections.push(nxtNode.id);
+        }
+      }
+    }
+
+    return { nodes, cols, rows, flat: nodes.flat() };
+  },
+
+  emoji(type) {
+    return { fight:'🥋', hoipoi:'📦', upgrade:'⚡', heal:'❤️', event:'👤', boss:'👹' }[type] || '?';
+  },
+
+  render(map) {
+    const canvas = document.getElementById('map-canvas');
+    const { cols, rows } = map;
+    const W = cols * this.NODE_W + this.MARGIN_X * 2;
+    const H = rows * this.NODE_H + this.MARGIN_Y * 2;
+
+    canvas.style.width  = W + 'px';
+    canvas.style.height = H + 'px';
+    canvas.innerHTML    = '';
+
+    // SVG para líneas
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('width', W);
+    svg.setAttribute('height', H);
+    svg.style.position = 'absolute';
+    svg.style.inset = '0';
+    svg.style.pointerEvents = 'none';
+
+    const nodePos = {};
+    const flat = map.flat;
+
+    // Calcular posiciones
+    for (const node of flat) {
+      const colNodes = map.nodes[node.col];
+      const numInCol = colNodes.length;
+      const cx = this.MARGIN_X + node.col * this.NODE_W + this.NODE_W / 2;
+      const spanH = (rows - 1) * this.NODE_H;
+      const cy = this.MARGIN_Y + (numInCol === 1
+        ? spanH / 2
+        : (node.row / (numInCol - 1)) * spanH);
+      nodePos[node.id] = { cx, cy };
+    }
+
+    // Dibujar líneas
+    for (const node of flat) {
+      const {cx:x1, cy:y1} = nodePos[node.id];
+      for (const connId of node.connections) {
+        const {cx:x2, cy:y2} = nodePos[connId];
+        const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+        line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+        line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+        line.setAttribute('stroke', '#2a2a4a');
+        line.setAttribute('stroke-width', '2');
+        line.setAttribute('stroke-dasharray', '5,4');
+        svg.appendChild(line);
+      }
+    }
+    canvas.appendChild(svg);
+
+    // Dibujar nodos
+    for (const node of flat) {
+      const {cx, cy} = nodePos[node.id];
+      const el = document.createElement('div');
+      el.className = 'map-node';
+      el.dataset.id   = node.id;
+      el.dataset.type = node.type;
+      el.textContent  = this.emoji(node.type);
+
+      if (node.visited)         el.classList.add('visited');
+      else if (!node.reachable) el.classList.add('locked');
+      else                      el.classList.add('reachable');
+
+      if (State.currentNode && State.currentNode.id === node.id) el.classList.add('current');
+
+      el.style.left = cx + 'px';
+      el.style.top  = cy + 'px';
+
+      // Tooltip
+      const tt = document.createElement('div');
+      tt.className   = 'node-tooltip';
+      tt.textContent = {fight:'Combate',hoipoi:'Hoi-Poi',upgrade:'Mejora',heal:'Curación',event:'Evento',boss:'⚠ BOSS'}[node.type] || '';
+      el.appendChild(tt);
+
+      if (node.reachable && !node.visited) {
+        el.addEventListener('click', () => Game.enterNode(node));
+      }
+
+      canvas.appendChild(el);
+    }
+  },
+
+  markVisited(nodeId, map) {
+    const node = map.flat.find(n => n.id === nodeId);
+    if (!node) return;
+    node.visited = true;
+    node.reachable = false;
+    // Habilitar conexiones
+    for (const connId of node.connections) {
+      const conn = map.flat.find(n => n.id === connId);
+      if (conn && !conn.visited) conn.reachable = true;
+    }
+  }
+};
+
+/* ════════════════════════════════════════════════════════════════
+   COMBAT ENGINE
+════════════════════════════════════════════════════════════════ */
+const Combat = {
+  techsOpen: false,
+
+  initCombat(enemy, isBoss = false) {
+    const p = State.player;
+    // Escalar enemigo al nivel del jugador
+    const lvlOffset = isBoss ? 2 : Utils.rand(-1, 2);
+    const eLvl = Math.max(1, p.level + lvlOffset);
+    const scale = 1 + (eLvl - 1) * 0.18;
+
+    const eStats = {
+      hp:    Math.round(enemy.baseStats.hp * scale),
+      atk:   Math.round(enemy.baseStats.atk * scale),
+      def:   Math.round(enemy.baseStats.def * scale),
+      spd:   Math.round(enemy.baseStats.spd * scale)
+    };
+
+    State.combatState = {
+      player: { ...p },
+      enemy: {
+        ...enemy,
+        level: eLvl,
+        hp: eStats.hp, maxHp: eStats.hp,
+        atk: eStats.atk, def: eStats.def, spd: eStats.spd,
+        isBoss,
+        phase2Active: false,
+        shieldActive: false,
+        absorbActive: false,
+        spdBoost: 0
+      },
+      cooldowns: {},
+      playerEffects: { shield: 0, evadeNext: false, absorb: false, spdBoost: 0 },
+      turn: 0,
+      over: false
+    };
+
+    // Inicializar cooldowns
+    p.techniques.forEach(t => State.combatState.cooldowns[t.id] = 0);
+
+    // Log
+    document.getElementById('combat-log').innerHTML = '';
+    document.getElementById('combat-type-label').textContent = isBoss ? '⚔ Combate Final' : '🥋 Combate';
+    this.techsOpen = false;
+    document.getElementById('combat-techs-panel').classList.remove('open');
+
+    UI.show('combat');
+    UI.updateCombatUI();
+    UI.addLog(`¡Comienza el combate contra ${enemy.name}!`, 'info');
+  },
+
+  toggleTechs() {
+    this.techsOpen = !this.techsOpen;
+    document.getElementById('combat-techs-panel').classList.toggle('open', this.techsOpen);
+  },
+
+  startBoss() {
+    this.initCombat(BOSS_PILAF, true);
+  },
+
+  playerAction(action) {
+    const cs = State.combatState;
+    if (!cs || cs.over) return;
+
+    // Deshabilitar botones durante procesamiento
+    this.setActionsEnabled(false);
+
+    let acted = false;
+
+    if (action === 'attack') {
+      this.executeAttack(cs.player, cs.enemy, cs.player.techniques[0], cs);
+      acted = true;
+    } else if (action === 'item') {
+      UI.closeModal('modal-combat-item');
+      this.showItemMenu();
+      this.setActionsEnabled(true);
+      return;
+    } else if (action === 'flee') {
+      if (cs.enemy.isBoss) { UI.toast('¡No puedes huir de un Boss!', 'bad'); this.setActionsEnabled(true); return; }
+      const chance = Utils.clamp(0.3 + (cs.player.spd - cs.enemy.spd) * 0.03, 0.15, 0.7);
+      if (Math.random() < chance) {
+        UI.addLog('¡Has conseguido huir!', 'info');
+        cs.over = true;
+        setTimeout(() => Game.afterEvent(), 1200);
+        return;
+      } else {
+        UI.addLog('¡No has podido huir!', 'miss');
+        acted = true;
+      }
+    }
+
+    if (acted) {
+      if (!cs.over) {
+        setTimeout(() => this.enemyTurn(cs), 700);
+      }
+    }
+  },
+
+  useTech(techId) {
+    const cs = State.combatState;
+    if (!cs || cs.over) return;
+    const p = cs.player;
+    const tech = p.techniques.find(t => t.id === techId);
+    if (!tech) return;
+    if (p.ki < tech.cost) { UI.toast('Ki insuficiente.', 'bad'); return; }
+    if ((cs.cooldowns[techId] || 0) > 0) { UI.toast('Técnica en cooldown.', 'bad'); return; }
+
+    this.setActionsEnabled(false);
+    document.getElementById('combat-techs-panel').classList.remove('open');
+    this.techsOpen = false;
+
+    this.executeAttack(p, cs.enemy, tech, cs);
+    cs.cooldowns[techId] = tech.cooldown;
+
+    if (!cs.over) {
+      setTimeout(() => this.enemyTurn(cs), 700);
+    }
+  },
+
+  executeAttack(attacker, defender, tech, cs) {
+    const p = cs.player;
+    const e = cs.enemy;
+    const isPlayerAttacking = attacker === p;
+
+    // Efectos de soporte sin daño
+    if (tech.type === 'soporte') {
+      attacker.ki -= tech.cost;
+      if (tech.evadeNext) {
+        cs.playerEffects.evadeNext = true;
+        UI.addLog(`${attacker.name} usa ${tech.name}. Esquivará el próximo ataque.`, 'ki');
+      }
+      if (tech.shieldTurns) {
+        cs.playerEffects.shield = tech.shieldTurns;
+        UI.addLog(`${attacker.name} usa ${tech.name}. Reducción de daño activa por ${tech.shieldTurns} turnos.`, 'ki');
+      }
+      if (tech.absorbHit) {
+        cs.playerEffects.absorb = true;
+        UI.addLog(`${attacker.name} invoca el Robot Cápsula. Absorberá el próximo ataque.`, 'ki');
+      }
+      if (tech.spdBoostTurns) {
+        cs.playerEffects.spdBoost = tech.spdBoostTurns;
+        attacker.spd = Math.round(attacker.spd * 1.5);
+        UI.addLog(`${attacker.name} usa ${tech.name}. ¡Velocidad turbocargada!`, 'ki');
+      }
+      if (tech.fleeChance && !e.isBoss) {
+        if (Math.random() < tech.fleeChance) {
+          UI.addLog(`${attacker.name} soborna al enemigo. ¡${e.name} se retira!`, 'heal');
+          cs.over = true;
+          State.stats.fightsWon++;
+          setTimeout(() => this.winCombat(false), 900);
+          return;
+        } else {
+          UI.addLog(`El soborno fracasó. ${e.name} no está impresionado.`, 'miss');
+        }
+      }
+      UI.updateCombatUI();
+      return;
+    }
+
+    // Fallo por chance
+    const missChance = tech.missChance || 0;
+    if (Math.random() < missChance) {
+      UI.addLog(`${attacker.name} usa ${tech.name}... ¡¡Pero falla!!`, 'miss');
+      attacker.ki -= tech.cost;
+      UI.updateCombatUI();
+      return;
+    }
+
+    // Pasiva Goku: esquivar físicos
+    if (!isPlayerAttacking && tech && tech.type === 'fisica' && p.passive && p.passive.name === 'Cola de Mono') {
+      if (Math.random() < 0.10) {
+        UI.addLog(`¡${p.name} esquiva el ataque con su cola!`, 'heal');
+        return;
+      }
+    }
+
+    // Calcular daño
+    const rawDef = isPlayerAttacking
+      ? (e.phase2Active ? Math.round(e.def * 1.5) : e.def)
+      : (cs.playerEffects.shield > 0 ? Math.round(p.def * 1.4) : p.def);
+
+    const pierceMult = tech.pierceDef ? (1 - tech.pierceDef) : 1;
+    const effectiveDef = rawDef * pierceMult;
+    const atkStat = isPlayerAttacking ? p.atk : e.atk;
+    let dmg = Math.round(Math.max(1, (atkStat * (tech.mult || 1)) - (effectiveDef * 0.5)));
+
+    // Crítico (10%)
+    let crit = false;
+    if (Math.random() < 0.10) { dmg = Math.round(dmg * 1.5); crit = true; }
+
+    // Absorb (robot cápsula)
+    if (!isPlayerAttacking && cs.playerEffects.absorb) {
+      cs.playerEffects.absorb = false;
+      UI.addLog(`¡El Robot Cápsula absorbe el golpe!`, 'heal');
+      return;
+    }
+
+    // Aplicar daño
+    if (isPlayerAttacking) {
+      e.hp -= dmg;
+    } else {
+      p.hp -= dmg;
+    }
+
+    // Ki cost
+    if (isPlayerAttacking) attacker.ki -= tech.cost;
+
+    // Log
+    const techName = tech ? tech.name : 'Ataque';
+    const cls = crit ? 'crit' : (isPlayerAttacking ? 'hit' : 'danger');
+    const critTxt = crit ? ' ¡CRÍTICO!' : '';
+    UI.addLog(
+      `${attacker.name} usa ${techName} → ${dmg} daño a ${defender.name}.${critTxt}`,
+      cls
+    );
+
+    // Número flotante
+    const rect = document.getElementById(isPlayerAttacking ? 'cf-enemy-avatar' : 'cf-player-avatar').getBoundingClientRect();
+    UI.floatDmg(crit ? `💥${dmg}` : `-${dmg}`, rect.left, rect.top, crit ? 'crit' : (tech.type === 'ki' ? 'ki' : 'phys'));
+
+    // Boss fase 2
+    if (e.isBoss && !e.phase2Active && e.hp / e.maxHp <= e.phase2Trigger) {
+      e.phase2Active = true;
+      UI.addLog(`⚠ ¡${e.name} activa el Modo Berserk! ¡Su defensa aumenta!`, 'danger');
+      UI.toast('⚠ ¡Fase 2 activada!', 'bad');
+    }
+
+    // Reducir cooldowns
+    if (!isPlayerAttacking) {
+      Object.keys(cs.cooldowns).forEach(k => {
+        if (cs.cooldowns[k] > 0) cs.cooldowns[k]--;
+      });
+      // Reducir efectos
+      if (cs.playerEffects.shield > 0) cs.playerEffects.shield--;
+      if (cs.playerEffects.spdBoost > 0) {
+        cs.playerEffects.spdBoost--;
+        if (cs.playerEffects.spdBoost === 0) p.spd = Math.round(p.spd / 1.5);
+      }
+    }
+
+    UI.updateCombatUI();
+
+    // Check win/lose
+    if (e.hp <= 0) {
+      cs.over = true;
+      e.hp = 0;
+      UI.updateCombatUI();
+      State.stats.fightsWon++;
+      if (e.isBoss) State.stats.bossesDefeated++;
+      setTimeout(() => this.winCombat(e.isBoss), 900);
+    } else if (p.hp <= 0) {
+      p.hp = 0;
+      UI.updateCombatUI();
+      cs.over = true;
+      setTimeout(() => Game.gameOver(), 900);
+    }
+  },
+
+  enemyTurn(cs) {
+    if (cs.over) return;
+    const p  = cs.player;
+    const e  = cs.enemy;
+
+    // IA simple: usa ataque básico; de vez en cuando un "ataque especial" más fuerte
+    const useSpecial = Math.random() < 0.25;
+    const fakeTech = useSpecial
+      ? { name: 'Ataque Especial', type: 'fisica', cost: 0, mult: 1.8 }
+      : { name: 'Ataque', type: 'fisica', cost: 0, mult: 1.0 };
+
+    // Evasión (Krillin pasiva afterimage)
+    if (cs.playerEffects.evadeNext) {
+      cs.playerEffects.evadeNext = false;
+      UI.addLog(`¡${p.name} usa Afterimage y esquiva el ataque de ${e.name}!`, 'heal');
+      this.setActionsEnabled(true);
+      return;
+    }
+
+    this.executeAttack(e, p, fakeTech, cs);
+    if (!cs.over) this.setActionsEnabled(true);
+  },
+
+  winCombat(isBoss) {
+    const xpGain = isBoss ? 3 : 1;
+    const oldLvl = State.player.level;
+
+    // Sincronizar HP/Ki desde el estado de combate
+    State.player.hp = Math.max(0, State.combatState.player.hp);
+    State.player.ki = Math.min(State.player.maxKi, State.combatState.player.ki + 8);
+
+    // Subir nivel
+    State.player.level += xpGain;
+    const lvl = State.player.level;
+
+    // Escalar stats
+    State.player.maxHp = State.player._baseMaxHp + (lvl - 1) * 5;
+    State.player.atk   = State.player._baseAtk   + (lvl - 1) * 1.5;
+    State.player.def   = State.player._baseDef   + (lvl - 1) * 0.8;
+    State.player.spd   = State.player._baseSpd   + (lvl - 1) * 0.5;
+    State.player.maxKi = State.player._baseMaxKi + (lvl - 1) * 3;
+    State.player.hp = Math.min(State.player.hp, State.player.maxHp);
+    State.player.ki = Math.min(State.player.ki, State.player.maxKi);
+
+    const loot = State.combatState.enemy.loot;
+    // Mostrar pantalla de level up (ella se encarga de continuar)
+    setTimeout(() => LevelUp.show(oldLvl, lvl, xpGain, isBoss, loot), 600);
+  },
+
+  showItemMenu() {
+    const consumables = State.inventory.filter(i => i.type === 'consumable');
+    const body = document.getElementById('modal-combat-item-body');
+    if (consumables.length === 0) {
+      body.innerHTML = '<p style="color:var(--txt3);font-size:.85rem;">No tienes objetos consumibles.</p>';
+    } else {
+      body.innerHTML = consumables.map(item => `
+        <button onclick="Combat.useItem('${item.id}')" style="display:flex;align-items:center;gap:.7rem;width:100%;padding:.6rem .8rem;background:var(--bg3);border:1px solid var(--border);border-radius:var(--rad);color:var(--txt);cursor:pointer;margin-bottom:.3rem;font-size:.82rem;transition:all .15s;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">
+          <span style="font-size:1.2rem;">${item.emoji}</span>
+          <span>${item.name}</span>
+          <span style="margin-left:auto;font-size:.75rem;color:var(--txt3);">${item.desc}</span>
+        </button>
+      `).join('');
+    }
+    UI.showModal('modal-combat-item');
+  },
+
+  useItem(itemId) {
+    UI.closeModal('modal-combat-item');
+    const cs = State.combatState;
+    const idx = State.inventory.findIndex(i => i.id === itemId);
+    if (idx === -1) return;
+    const item = State.inventory[idx];
+    const p = cs.player;
+
+    if (item.effect === 'fullheal') {
+      p.hp = p.maxHp;
+      State.player.hp = p.maxHp;
+      UI.addLog(`${p.name} usa ${item.name}. ¡HP restaurado al máximo!`, 'heal');
+      const rect = document.getElementById('cf-player-avatar').getBoundingClientRect();
+      UI.floatDmg(`+${p.maxHp}`, rect.left, rect.top, 'heal');
+    } else if (item.effect === 'heal30') {
+      const gain = Math.min(30, p.maxHp - p.hp);
+      p.hp += gain;
+      State.player.hp = p.hp;
+      UI.addLog(`${p.name} come ${item.name}. +${gain} HP.`, 'heal');
+    } else if (item.effect === 'cure') {
+      UI.addLog(`${p.name} usa ${item.name}. Estados curados.`, 'heal');
+    }
+
+    State.inventory.splice(idx, 1);
+    UI.updateCombatUI();
+    this.setActionsEnabled(false);
+    setTimeout(() => this.enemyTurn(cs), 700);
+  },
+
+  setActionsEnabled(enabled) {
+    ['btn-attack','btn-tech','btn-item','btn-flee'].forEach(id => {
+      const btn = document.getElementById(id);
+      if (btn) btn.disabled = !enabled;
+    });
+  }
+};
+
+/* ════════════════════════════════════════════════════════════════
+   HOI-POI ENGINE
+════════════════════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════════════════════════
+   LEVEL UP ENGINE
+════════════════════════════════════════════════════════════════ */
+const LevelUp = {
+  _isBoss: false,
+  _loot: null,
+
+  show(oldLvl, newLvl, xpGain, isBoss, loot) {
+    this._isBoss = isBoss;
+    this._loot   = loot;
+    const gained = xpGain;
+
+    document.getElementById('lu-level').textContent = newLvl;
+    document.getElementById('lu-sub').textContent = xpGain > 1
+      ? `+${xpGain} niveles de golpe. ¡Increíble hazaña!`
+      : 'Has ganado experiencia en combate.';
+
+    const rows = [
+      ['❤️ HP Máx',    '+' + (gained * 5)],
+      ['⚔️ Ataque',    '+' + (gained * 1.5).toFixed(1)],
+      ['🛡️ Defensa',   '+' + (gained * 0.8).toFixed(1)],
+      ['💨 Velocidad', '+' + (gained * 0.5).toFixed(1)],
+      ['⚡ Ki Máx',    '+' + (gained * 3)]
+    ];
+
+    document.getElementById('lu-stats').innerHTML = rows.map(([k, v]) => `
+      <div class="lu-stat">
+        <div class="lu-stat-name">${k}</div>
+        <div class="lu-stat-val">${v}</div>
+      </div>`).join('');
+
+    document.getElementById('lu-btn').onclick = () => LevelUp.continue();
+    UI.show('levelup');
+    UI.toast(`⭐ ¡Nivel ${newLvl}!`, 'gold');
+  },
+
+  continue() {
+    if (this._isBoss) { Game.mapVictory(); return; }
+    if (this._loot === 'Hoipoi' || this._loot === 'hoipoi') {
+      HoiPoi.show();
+    } else {
+      Game.afterEvent();
+    }
+  }
+};
+
+/* ════════════════════════════════════════════════════════════════
+   SHENRON
+════════════════════════════════════════════════════════════════ */
+const Shenron = {
+  show() {
+    const wishes = [
+      { emoji: '🌟', text: 'Restaurar la vida de todo el equipo al máximo.', action: 'fullheal' },
+      { emoji: '⚡', text: 'Aprender una técnica poderosa aleatoria.',       action: 'learn'    },
+      { emoji: '💪', text: 'Potenciar todas las estadísticas (+5/+20HP/+3SPD).', action: 'boost' }
+    ];
+    document.getElementById('shenron-wishes').innerHTML = wishes.map(w => `
+      <button onclick="Shenron.grant('${w.action}')" style="display:flex;align-items:center;gap:.8rem;width:100%;padding:.8rem 1rem;background:var(--bg3);border:1px solid var(--green);border-radius:var(--rad);color:var(--txt);cursor:pointer;font-size:.85rem;text-align:left;transition:all .15s;" onmouseover="this.style.background='rgba(76,175,125,.12)'" onmouseout="this.style.background='var(--bg3)'">
+        <span style="font-size:1.4rem;">${w.emoji}</span><span>${w.text}</span>
+      </button>`).join('');
+    UI.showModal('modal-shenron');
+  },
+
+  grant(action) {
+    UI.closeModal('modal-shenron');
+    const p = State.player;
+    if (action === 'fullheal') {
+      p.hp = p.maxHp; p.ki = p.maxKi;
+      State.companions.forEach(c => { c.stats.hp = c.stats.maxHp; });
+      UI.toast('🐉 ¡Shenron restaura todo el equipo!', 'gold');
+    } else if (action === 'learn') {
+      const char = CHARACTERS[p.id];
+      const avail = char.learnableTechs.filter(t => !p.techniques.find(pt => pt.id === t));
+      if (avail.length) {
+        const tech = LEARNABLE_TECHS[avail[Utils.rand(0, avail.length - 1)]];
+        if (tech && !p.techniques.find(t => t.id === tech.id)) p.techniques.push(tech);
+        UI.toast(`🐉 Shenron te enseña: ${tech.name}`, 'gold');
+      } else {
+        UI.toast('🐉 Ya conoces todas las técnicas disponibles.', 'gold');
+      }
+    } else {
+      p.atk += 5; p._baseAtk += 5;
+      p.def += 5; p._baseDef += 5;
+      p.maxHp += 20; p.hp = Math.min(p.hp + 20, p.maxHp); p._baseMaxHp += 20;
+      p.spd += 3; p._baseSpd += 3;
+      UI.toast('🐉 ¡Shenron potencia tus capacidades!', 'gold');
+    }
+    State.dragonBalls = [false, false, false, false, false, false, false];
+    UI.updateSidebar();
+  }
+};
+
+const HoiPoi = {
+  show() {
+    State.stats.hoipoiOpened++;
+
+    // Pasiva Bulma: ítem extra una vez por mapa
+    if (State.player.id === 'bulma' && !State.bulmaBonus) {
+      State.bulmaBonus = true;
+      UI.toast('🔧 Pasiva de Bulma: ¡recibes un ítem extra!', 'ki');
+      const extraEntry = HOIPOI_TABLE[0]; // item
+      const extraResult = extraEntry.generate(State.player.id);
+      if (extraResult) this._applyResult(extraEntry, extraResult);
+    }
+
+    const entry  = Utils.weightedRandom(HOIPOI_TABLE);
+    const result = entry.generate(State.player.id);
+    this._applyResult(entry, result);
+    UI.show('hoipoi');
+  },
+
+  _applyResult(entry, result) {
+    if (!result) {
+      const gain = 20;
+      State.player.hp = Math.min(State.player.maxHp, State.player.hp + gain);
+      document.getElementById('hoipoi-icon').textContent  = '❤️';
+      document.getElementById('hoipoi-type').textContent  = 'Curación';
+      document.getElementById('hoipoi-name').textContent  = 'Brebaje Restaurador';
+      document.getElementById('hoipoi-desc').textContent  = `La cápsula contenía un brebaje misterioso. +${gain} HP.`;
+      return;
+    }
+
+    const type = entry.type;
+
+    if (type === 'item') {
+      this._addItem(result);
+      if (result.effect === 'defbuff')    { State.player.def = Math.round(State.player.def * (1 + result.value)); State.player._baseDef = Math.round(State.player._baseDef * (1 + result.value)); }
+      if (result.effect === 'spdbuff')    { State.player.spd = Math.round(State.player.spd * (1 + result.value)); State.player._baseSpd = Math.round(State.player._baseSpd * (1 + result.value)); }
+      if (result.effect === 'dbbuff')     { State.player._dbBonus = (State.player._dbBonus || 0) + result.value; }
+      if (result.effect === 'unlocktech') {
+        const tech = LEARNABLE_TECHS[result.tech];
+        if (tech && !State.player.techniques.find(t => t.id === tech.id)) State.player.techniques.push(tech);
+      }
+      document.getElementById('hoipoi-icon').textContent = result.emoji;
+      document.getElementById('hoipoi-type').textContent = 'Objeto';
+      document.getElementById('hoipoi-name').textContent = result.name;
+      document.getElementById('hoipoi-desc').textContent = result.desc;
+
+    } else if (type === 'stat') {
+      const s = result;
+      if (s.stat === 'hp')  { State.player.maxHp += s.amount; State.player.hp += s.amount; State.player._baseMaxHp += s.amount; }
+      if (s.stat === 'atk') { State.player.atk   += s.amount; State.player._baseAtk += s.amount; }
+      if (s.stat === 'def') { State.player.def   += s.amount; State.player._baseDef += s.amount; }
+      if (s.stat === 'spd') { State.player.spd   += s.amount; State.player._baseSpd += s.amount; }
+      if (s.stat === 'ki')  { State.player.maxKi += s.amount; State.player.ki  += s.amount; State.player._baseMaxKi += s.amount; }
+      document.getElementById('hoipoi-icon').textContent = s.emoji;
+      document.getElementById('hoipoi-type').textContent = 'Mejora de estadística';
+      document.getElementById('hoipoi-name').textContent = s.name;
+      document.getElementById('hoipoi-desc').textContent = s.desc;
+
+    } else if (type === 'tech') {
+      if (!State.player.techniques.find(t => t.id === result.id)) State.player.techniques.push(result);
+      document.getElementById('hoipoi-icon').textContent = result.emoji;
+      document.getElementById('hoipoi-type').textContent = 'Nueva técnica';
+      document.getElementById('hoipoi-name').textContent = result.name;
+      document.getElementById('hoipoi-desc').textContent = result.desc;
+
+    } else if (type === 'companion') {
+      State.companions.push(result);
+      document.getElementById('hoipoi-icon').textContent = result.avatar;
+      document.getElementById('hoipoi-type').textContent = '¡Compañero!';
+      document.getElementById('hoipoi-name').textContent = result.name;
+      document.getElementById('hoipoi-desc').textContent = result.passive;
+
+    } else if (type === 'dragonball') {
+      State.dragonBalls[result] = true;
+      State.stats.dragonBallsFound++;
+      document.getElementById('hoipoi-icon').textContent = '⭐';
+      document.getElementById('hoipoi-type').textContent = '¡Dragon Ball!';
+      document.getElementById('hoipoi-name').textContent = `Esfera de ${result + 1} Estrellas`;
+      document.getElementById('hoipoi-desc').textContent = `Has encontrado la Dragon Ball de ${result + 1} estrella${result > 0 ? 's' : ''}. ¡Reúne las 7 para invocar a Shenron!`;
+    }
+  },
+
+  _addItem(item) {
+    if (State.inventory.length < 6) {
+      State.inventory.push(item);
+    } else {
+      UI.toast('¡Inventario lleno! El objeto se ha perdido.', 'bad');
+    }
+  },
+
+  checkShenron() {
+    if (State.dragonBalls.every(Boolean)) {
+      setTimeout(() => Shenron.show(), 1000);
+    }
+  }
+};
+
+/* ════════════════════════════════════════════════════════════════
+   UPGRADE ENGINE
+════════════════════════════════════════════════════════════════ */
+const Upgrade = {
+  show() {
+    const pool = [
+      { icon:'⚔️', name:'+4 Ataque',       desc:'Tu fuerza de combate aumenta permanentemente.', apply: () => { State.player.atk += 4; State.player._baseAtk += 4; } },
+      { icon:'🛡️', name:'+4 Defensa',      desc:'Reduces más el daño recibido en combate.', apply: () => { State.player.def += 4; State.player._baseDef += 4; } },
+      { icon:'❤️', name:'+20 HP Máximo',   desc:'Tu vitalidad máxima aumenta.', apply: () => { State.player.maxHp += 20; State.player.hp += 10; State.player._baseMaxHp += 20; } },
+      { icon:'💨', name:'+3 Velocidad',    desc:'Actúas antes y tu porcentaje de huida mejora.', apply: () => { State.player.spd += 3; State.player._baseSpd += 3; } },
+      { icon:'⚡', name:'+15 Ki Máximo',   desc:'Puedes usar más técnicas seguidas.', apply: () => { State.player.maxKi += 15; State.player.ki += 8; State.player._baseMaxKi += 15; } },
+      { icon:'🔄', name:'Regen Ki (+12)',  desc:'Recuperas 12 Ki ahora mismo.', apply: () => { State.player.ki = Math.min(State.player.maxKi, State.player.ki + 12); } },
+      { icon:'💊', name:'Curación (+30 HP)',desc:'Recuperas 30 HP instantáneamente.', apply: () => { State.player.hp = Math.min(State.player.maxHp, State.player.hp + 30); } }
+    ];
+
+    // Mostrar técnica aprendible si existe
+    const char = CHARACTERS[State.player.id];
+    const availTech = char.learnableTechs.find(t => !State.player.techniques.find(pt => pt.id === t));
+    if (availTech) {
+      const tech = LEARNABLE_TECHS[availTech];
+      pool.push({
+        icon: tech.emoji,
+        name: `Aprender: ${tech.name}`,
+        desc: tech.desc,
+        apply: () => {
+          if (!State.player.techniques.find(t => t.id === tech.id)) {
+            State.player.techniques.push(tech);
+          }
+        }
+      });
+    }
+
+    // Elegir 3 al azar
+    const shuffled = pool.sort(() => Math.random() - .5).slice(0, 3);
+    const grid = document.getElementById('upgrade-grid');
+    grid.innerHTML = shuffled.map((u, i) => `
+      <div class="upgrade-card" onclick="Upgrade.pick(${i})">
+        <div class="upgrade-icon">${u.icon}</div>
+        <div class="upgrade-name">${u.name}</div>
+        <div class="upgrade-desc">${u.desc}</div>
+      </div>
+    `).join('');
+
+    // Guardar referencia
+    this._options = shuffled;
+    UI.show('upgrade');
+  },
+
+  pick(idx) {
+    const opt = this._options[idx];
+    opt.apply();
+    UI.toast(`✅ ${opt.name}`, 'good');
+    UI.updateSidebar();
+    Game.afterEvent();
+  }
+};
+
+/* ════════════════════════════════════════════════════════════════
+   EVENT ENGINE
+════════════════════════════════════════════════════════════════ */
+const EventEngine = {
+  _pending: null,
+
+  show() {
+    const ev = EVENTS[Utils.rand(0, EVENTS.length - 1)];
+    this._pending = ev;
+
+    document.getElementById('ev-icon').textContent    = ev.icon;
+    document.getElementById('ev-eyebrow').textContent = ev.eyebrow;
+    document.getElementById('ev-title').textContent   = ev.title;
+    document.getElementById('ev-body').textContent    = ev.body;
+
+    const choices = document.getElementById('ev-choices');
+    choices.innerHTML = ev.choices.map((c, i) => `
+      <button class="event-choice" onclick="EventEngine.choose(${i})">${c.text}</button>
+    `).join('');
+
+    UI.show('event');
+  },
+
+  choose(idx) {
+    const ev = this._pending;
+    if (!ev) return;
+    const choice = ev.choices[idx];
+    const eff = choice.effect;
+
+    if (eff.type === 'heal') {
+      const gain = Math.min(eff.val, State.player.maxHp - State.player.hp);
+      State.player.hp += gain;
+      UI.toast(`❤️ +${gain} HP`, 'good');
+      Game.afterEvent();
+    } else if (eff.type === 'learn') {
+      Upgrade.show();
+    } else if (eff.type === 'hoipoi') {
+      HoiPoi.show();
+    } else if (eff.type === 'fight_reward') {
+      // Combate con enemigo aleatorio + recompensa garantizada
+      const enemy = Utils.deepClone(ENEMIES[Utils.rand(0, ENEMIES.length - 3)]);
+      enemy.loot = 'Hoipoi';
+      Combat.initCombat(enemy);
+    } else if (eff.type === 'upgrade_stat') {
+      Upgrade.show();
+    } else if (eff.type === 'heal_party') {
+      State.player.hp = Math.min(State.player.maxHp, State.player.hp + eff.val);
+      State.companions.forEach(c => c.stats.hp = Math.min(c.stats.maxHp, c.stats.hp + eff.val));
+      UI.toast(`❤️ Equipo curado +${eff.val} HP`, 'good');
+      Game.afterEvent();
+    } else {
+      Game.afterEvent();
+    }
+  }
+};
+
+/* ════════════════════════════════════════════════════════════════
+   GAME CONTROLLER
+════════════════════════════════════════════════════════════════ */
+const Game = {
+  newGame() {
+    State.inventory = [];
+    State.companions = [];
+    State.dragonBalls = [false,false,false,false,false,false,false];
+    State.stats = { fightsWon: 0, bossesDefeated: 0, hoipoiOpened: 0, dragonBallsFound: 0, nodesVisited: 0 };
+    State.bulmaBonus = false;
+    State.player = null;
+    State.map = null;
+    State.currentNode = null;
+    this.showCharSelect();
+  },
+
+  continueGame() {
+    const saved = localStorage.getItem('db_roguelike_save');
+    if (!saved) { UI.toast('No hay partida guardada.', 'bad'); return; }
+    try {
+      const data = JSON.parse(saved);
+      Object.assign(State, data);
+      MapEngine.render(State.map);
+      UI.updateSidebar();
+      UI.show('map');
+    } catch(e) {
+      UI.toast('Error al cargar la partida.', 'bad');
+    }
+  },
+
+  save() {
+    const data = {
+      player: State.player,
+      companions: State.companions,
+      inventory: State.inventory,
+      dragonBalls: State.dragonBalls,
+      map: State.map,
+      currentNode: State.currentNode,
+      stats: State.stats,
+      bulmaBonus: State.bulmaBonus
+    };
+    localStorage.setItem('db_roguelike_save', JSON.stringify(data));
+  },
+
+  showCharSelect() {
+    const grid = document.getElementById('char-grid');
+    grid.innerHTML = Object.values(CHARACTERS).map(char => {
+      const maxStat = 100;
+      return `
+        <div class="char-card" data-char="${char.id}">
+          <div class="char-avatar">${char.avatar}</div>
+          <div class="char-name">${char.name}</div>
+          <div class="char-style">${char.style}</div>
+          ${Object.entries({HP:char.statColors.hp, ATK:char.statColors.atk, DEF:char.statColors.def, SPD:char.statColors.spd, Ki:char.statColors.ki}).map(([k,v]) => `
+            <div class="stat-row">
+              <span class="stat-label">${k}</span>
+              <div class="stat-bar"><div class="stat-fill" style="width:${v}%;background:${
+                k==='HP'?'var(--hp-color)':k==='ATK'?'var(--orange)':k==='DEF'?'var(--blue)':k==='SPD'?'var(--green)':'var(--ki)'
+              }"></div></div>
+              <span class="stat-val">${v}</span>
+            </div>
+          `).join('')}
+          <div class="char-passive">
+            <strong>⚡ ${char.passive.name}</strong><br>${char.passive.desc}
+          </div>
+          <div class="char-techs">
+            <div class="char-techs-label">Técnicas iniciales</div>
+            ${char.techniques.map(t => `<span class="tech-pill">${t.emoji} ${t.name}</span>`).join('')}
+          </div>
+          <button class="char-select-btn" onclick="Game.selectChar('${char.id}')">Elegir a ${char.name.split(' ')[0]}</button>
+        </div>
+      `;
+    }).join('');
+    UI.show('char');
+  },
+
+  selectChar(charId) {
+    const charData = CHARACTERS[charId];
+    const stats = Utils.deepClone(charData.baseStats);
+    State.player = {
+      id: charId,
+      name: charData.name,
+      avatar: charData.avatar,
+      level: 1,
+      passive: charData.passive,
+      techniques: Utils.deepClone(charData.techniques),
+      ...stats,
+      // Bases para escalar
+      _baseMaxHp: stats.maxHp,
+      _baseAtk:   stats.atk,
+      _baseDef:   stats.def,
+      _baseSpd:   stats.spd,
+      _baseMaxKi: stats.maxKi
+    };
+
+    State.map = MapEngine.generate();
+    MapEngine.render(State.map);
+    UI.updateSidebar();
+    UI.show('map');
+    UI.toast(`¡Aventura iniciada con ${charData.name}!`, 'good');
+  },
+
+  enterNode(node) {
+    if (!node.reachable || node.visited) return;
+
+    State.currentNode = node;
+    State.stats.nodesVisited++;
+    MapEngine.markVisited(node.id, State.map);
+    MapEngine.render(State.map);
+    this.save();
+
+    switch (node.type) {
+      case 'fight':
+        this.startFight();
+        break;
+      case 'hoipoi':
+        HoiPoi.show();
+        break;
+      case 'upgrade':
+        Upgrade.show();
+        break;
+      case 'heal':
+        this.doHeal();
+        break;
+      case 'event':
+        EventEngine.show();
+        break;
+      case 'boss':
+        this.showBossIntro();
+        break;
+    }
+  },
+
+  startFight() {
+    const pool = ENEMIES.filter(e => e.type === 'normal');
+    const special = ENEMIES.filter(e => e.type === 'special');
+    // A veces (30%) aparece un enemigo especial
+    const useSpecial = Math.random() < 0.3 && special.length > 0;
+    const pool2 = useSpecial ? special : pool;
+    const enemy = Utils.deepClone(pool2[Utils.rand(0, pool2.length - 1)]);
+    Combat.initCombat(enemy);
+  },
+
+  doHeal() {
+    const gain    = Math.round(State.player.maxHp * 0.35);
+    const kiGain  = Math.round(State.player.maxKi * 0.35);
+    State.player.hp = Math.min(State.player.maxHp, State.player.hp + gain);
+    State.player.ki = Math.min(State.player.maxKi, State.player.ki + kiGain);
+    UI.updateSidebar();
+    this._showHeal(gain, 'Has encontrado un lugar tranquilo. HP y Ki recuperados.');
+  },
+
+  showBossIntro() {
+    document.getElementById('boss-icon').textContent = BOSS_PILAF.emoji;
+    document.getElementById('boss-name').textContent = BOSS_PILAF.name;
+    document.getElementById('boss-lore').textContent = BOSS_PILAF.lore;
+    UI.show('boss-intro');
+  },
+
+
+
+  afterHoipoi() {
+    HoiPoi.checkShenron();
+    UI.updateSidebar();
+    this.afterEvent();
+  },
+
+  _showHeal(amount, label) {
+    document.getElementById('heal-amount').textContent = `+${amount} HP`;
+    document.getElementById('heal-label').textContent  = label;
+    UI.show('heal');
+  },
+
+  mapVictory() {
+    // Dragon Ball garantizada del boss
+    const mi = State.dragonBalls.findIndex(v => !v);
+    if (mi !== -1) {
+      State.dragonBalls[mi] = true;
+      State.stats.dragonBallsFound = (State.stats.dragonBallsFound || 0) + 1;
+      UI.toast(`⭐ Dragon Ball de ${mi + 1} estrella${mi > 0 ? 's' : ''} obtenida`, 'gold');
+    }
+
+    const resultStats = document.getElementById('result-stats');
+    resultStats.innerHTML = [
+      ['Nivel final',           State.player.level],
+      ['Combates ganados',      State.stats.fightsWon || State.stats.fights || 0],
+      ['Hoi-Poi abiertas',      State.stats.hoipoiOpened || State.stats.hoipois || 0],
+      ['Dragon Balls',          State.dragonBalls.filter(Boolean).length + ' / 7'],
+      ['Compañeros',            State.companions.length],
+      ['Técnicas aprendidas',   State.player.techniques.length]
+    ].map(([k, v]) => `<div class="result-stat-row"><span>${k}</span><span>${v}</span></div>`).join('');
+
+    document.getElementById('result-icon').textContent = '🏆';
+    document.getElementById('result-title').textContent = '¡Victoria!';
+    document.getElementById('result-title').className = 'result-title win';
+    document.getElementById('result-sub').textContent = 'Has derrotado al Emperador Pilaf y recuperado las Dragon Balls. La aventura de Goku apenas comienza...';
+    UI.show('result');
+    localStorage.removeItem('db_roguelike_save');
+  },
+
+  gameOver() {
+    document.getElementById('result-icon').textContent = '💀';
+    document.getElementById('result-title').textContent = 'Game Over';
+    document.getElementById('result-title').className = 'result-title lose';
+    document.getElementById('result-sub').textContent = 'El aventurero ha caído. Las Dragon Balls quedan dispersas... Quizás en la siguiente partida, el destino sea diferente.';
+    document.getElementById('result-stats').innerHTML = [
+      ['Nivel alcanzado', State.player.level],
+      ['Combates ganados', State.stats.fightsWon],
+      ['Nodos visitados', State.stats.nodesVisited],
+      ['Dragon Balls', State.dragonBalls.filter(Boolean).length + ' / 7']
+    ].map(([k, v]) => `
+      <div class="result-stat-row">
+        <span>${k}</span><span>${v}</span>
+      </div>
+    `).join('');
+    UI.show('result');
+    localStorage.removeItem('db_roguelike_save');
+  },
+
+  backToTitle() {
+    UI.show('intro');
+    // Actualizar botón continuar
+    const hasSave = !!localStorage.getItem('db_roguelike_save');
+    document.getElementById('btn-continue').disabled = !hasSave;
+    document.getElementById('btn-continue').style.opacity = hasSave ? '1' : '.4';
+  }
+};
+
+/* ════════════════════════════════════════════════════════════════
+   INIT
+════════════════════════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+  // Estrellas decorativas
+  const sc = document.getElementById('stars-container');
+  for (let i = 0; i < 60; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    const size = Utils.rand(1, 3);
+    s.style.cssText = `width:${size}px;height:${size}px;top:${Utils.rand(0,100)}%;left:${Utils.rand(0,100)}%;animation-delay:${(Math.random()*4).toFixed(2)}s;animation-duration:${(2.5+Math.random()*3).toFixed(1)}s`;
+    sc.appendChild(s);
+  }
+
+  // Esferas del Dragón animadas en intro
+  const orbsContainer = document.getElementById('intro-orbs');
+  for (let i = 1; i <= 7; i++) {
+    const orb = document.createElement('div');
+    orb.className = 'db-orb';
+    const starsDiv = document.createElement('div');
+    starsDiv.className = 'db-stars';
+    for (let j = 0; j < i; j++) {
+      const star = document.createElement('div');
+      star.className = 'db-star';
+      starsDiv.appendChild(star);
+    }
+    orb.appendChild(starsDiv);
+    orbsContainer.appendChild(orb);
+  }
+
+  // Botón continuar
+  const hasSave = !!localStorage.getItem('db_roguelike_save');
+  const btnContinue = document.getElementById('btn-continue');
+  btnContinue.disabled = !hasSave;
+  btnContinue.style.opacity = hasSave ? '1' : '.4';
+
+  UI.show('intro');
+});
+</script>
+</body>
+</html>

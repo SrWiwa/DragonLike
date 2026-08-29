@@ -528,6 +528,10 @@ body {
   box-shadow: 0 0 20px rgba(217,64,64,.4);
   font-size: 1.6rem;
 }
+.map-node[data-type="recruit"] {
+  background: radial-gradient(circle at 40% 35%, #0a2a2a, #051818);
+  border-color: #4ae8c9;
+}
 
 .map-node.visited {
   opacity: .4;
@@ -720,13 +724,30 @@ body {
 }
 
 .fighter-avatar {
-  font-size: 2.5rem;
-  width: 54px; height: 54px;
+  font-size: 2.3rem;
+  width: 58px; height: 58px;
   display: flex; align-items: center; justify-content: center;
-  background: var(--bg3);
-  border-radius: var(--rad);
-  border: 1px solid var(--border);
+  border-radius: 10px;
+  border: 2px solid #000;
+  outline: 2px solid var(--border);
+  outline-offset: 2px;
   flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+.fighter-avatar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(0deg, rgba(255,255,255,.06) 0px, rgba(255,255,255,.06) 1px, transparent 1px, transparent 3px);
+  pointer-events: none;
+}
+.fighter-avatar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 10px rgba(0,0,0,.5);
+  pointer-events: none;
 }
 
 .fighter-name {
@@ -1339,6 +1360,14 @@ body {
 }
 .heal-label { color: var(--txt2); font-size: .9rem; margin-bottom: 2rem; max-width: 340px; line-height: 1.5; }
 
+#screen-recruit {
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at 50% 40%, #062a28 0%, var(--bg) 70%);
+  text-align: center;
+  padding: 2rem;
+}
+
 /* ── PANTALLA LEVEL UP ── */
 #screen-levelup {
   align-items: center;
@@ -1620,6 +1649,21 @@ body {
 </div>
 
 <!-- ════════════════════════════════════════
+     PANTALLA: RECLUTAR COMPAÑERO
+════════════════════════════════════════ -->
+<div id="screen-recruit" class="screen">
+  <p class="hoipoi-label">Encuentro</p>
+  <div class="char-avatar" id="recruit-avatar" style="margin-left:auto;margin-right:auto;">🐷</div>
+  <h2 class="hoipoi-name" id="recruit-name">Oolong</h2>
+  <p class="hoipoi-desc" id="recruit-desc">Estadísticas y pasiva del compañero.</p>
+  <div style="display:flex;gap:.8rem;justify-content:center;">
+    <button class="btn btn-gold" onclick="Recruit.accept()">🤝 Reclutar</button>
+    <button class="btn btn-ghost" onclick="Recruit.decline()">Seguir viaje</button>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════
      PANTALLA: LEVEL UP
 ════════════════════════════════════════ -->
 <div id="screen-levelup" class="screen">
@@ -1746,6 +1790,27 @@ body {
 
 <script>
 /* ════════════════════════════════════════════════════════════════
+   TEMA DE SPRITES — colores de retrato pixel-art por personaje
+   (no puedo usar artwork oficial ni de fans; en su lugar cada
+   personaje tiene un marco de retrato retro con su propia paleta)
+════════════════════════════════════════════════════════════════ */
+const SPRITE_THEME = {
+  goku:          ['#ffc978', '#e87c2a', '#96420c'],
+  krillin:       ['#a9d0ff', '#4a8fe8', '#1d4f9c'],
+  bulma:         ['#d8bbff', '#9b5de5', '#562a91'],
+  wolf:          ['#cbb894', '#8a6d46', '#4a3620'],
+  bandit:        ['#e6a0a0', '#a83c3c', '#5c1414'],
+  oolong:        ['#ffc4dc', '#e87ca8', '#a03d68'],
+  yamcha:        ['#f5d9a0', '#c98a3c', '#7a4f16'],
+  pilaf_soldier: ['#aecbe8', '#4a6fa0', '#233a5c'],
+  mai:           ['#f2b0dc', '#c04090', '#701858'],
+  shu:           ['#96d8bc', '#2f8a68', '#154834'],
+  pilaf:         ['#ff9a7a', '#c9432a', '#5c1408'],
+  oolong_c:      ['#ffc4dc', '#e87ca8', '#a03d68'],
+  puar_c:        ['#cdeaff', '#7fb8e8', '#2d5f8f']
+};
+
+/* ════════════════════════════════════════════════════════════════
    DATOS — PERSONAJES
 ════════════════════════════════════════════════════════════════ */
 const CHARACTERS = {
@@ -1867,6 +1932,18 @@ const ITEMS = {
 };
 
 /* ════════════════════════════════════════════════════════════════
+   DATOS — COMPAÑEROS RECLUTABLES
+════════════════════════════════════════════════════════════════ */
+const COMPANIONS_POOL = [
+  { id: 'oolong_c', name: 'Oolong', avatar: '🐷',
+    stats: { hp: 35, maxHp: 35, atk: 5, def: 8, spd: 7, ki: 20, maxKi: 20 },
+    passive: 'Transformación: 20% de esquivar el primer ataque.' },
+  { id: 'puar_c', name: 'Puar', avatar: '🐱',
+    stats: { hp: 25, maxHp: 25, atk: 4, def: 5, spd: 15, ki: 15, maxKi: 15 },
+    passive: 'Scout: revela el tipo de la siguiente casilla.' }
+];
+
+/* ════════════════════════════════════════════════════════════════
    DATOS — EVENTOS
 ════════════════════════════════════════════════════════════════ */
 const EVENTS = [
@@ -1946,11 +2023,7 @@ const HOIPOI_TABLE = [
   }},
   { weight: 12, type: 'companion', generate: () => {
     if (State.companions.length >= 2) return null;
-    const pool = [
-      { id:'oolong_c', name:'Oolong', avatar:'🐷', stats:{ hp:35,maxHp:35,atk:5,def:8,spd:7,ki:20,maxKi:20 }, passive:'Transformación: 20% de esquivar el primer ataque.' },
-      { id:'puar_c',   name:'Puar',   avatar:'🐱', stats:{ hp:25,maxHp:25,atk:4,def:5,spd:15,ki:15,maxKi:15 }, passive:'Scout: revela el tipo de la siguiente casilla.' }
-    ];
-    const available = pool.filter(c => !State.companions.find(sc => sc.id === c.id));
+    const available = COMPANIONS_POOL.filter(c => !State.companions.find(sc => sc.id === c.id));
     if (available.length === 0) return null;
     return available[Math.floor(Math.random() * available.length)];
   }},
@@ -1994,7 +2067,11 @@ const Utils = {
     return table[table.length - 1];
   },
   deepClone: obj => JSON.parse(JSON.stringify(obj)),
-  pct: (val, max) => Utils.clamp(Math.round((val / Math.max(max, 1)) * 100), 0, 100)
+  pct: (val, max) => Utils.clamp(Math.round((val / Math.max(max, 1)) * 100), 0, 100),
+  spriteGradient: (id) => {
+    const t = SPRITE_THEME[id] || ['#c8c8d8', '#8888a0', '#484858'];
+    return `linear-gradient(160deg, ${t[0]} 0%, ${t[1]} 55%, ${t[2]} 100%)`;
+  }
 };
 
 /* ════════════════════════════════════════════════════════════════
@@ -2128,7 +2205,7 @@ const UI = {
     } else {
       cl.innerHTML = State.companions.map(c => `
         <div class="companion-row">
-          <span class="companion-avatar">${c.avatar}</span>
+          <span class="companion-avatar" style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:4px;border:1px solid #000;background:${Utils.spriteGradient(c.id)};">${c.avatar}</span>
           <div class="companion-info">
             <div class="companion-name">${c.name}</div>
             <div class="companion-hp-bar"><div class="companion-hp-fill" style="width:${Utils.pct(c.stats.hp, c.stats.maxHp)}%"></div></div>
@@ -2162,6 +2239,7 @@ const UI = {
     const p = cs.player, e = cs.enemy;
 
     document.getElementById('cf-player-avatar').textContent = p.avatar;
+    document.getElementById('cf-player-avatar').style.background = Utils.spriteGradient(p.id);
     document.getElementById('cf-player-name').textContent = p.name;
     document.getElementById('cf-player-level').textContent = 'Nivel ' + p.level;
     document.getElementById('cf-player-hp-txt').textContent = `${Math.max(0,p.hp)}/${p.maxHp}`;
@@ -2188,7 +2266,7 @@ const UI = {
     const reserve = document.getElementById('cf-team-reserve');
     reserve.innerHTML = State.companions.map(c => `
       <div style="display:flex;align-items:center;gap:.5rem;padding:.3rem .5rem;background:var(--bg3);border-radius:var(--rad);border:1px solid var(--border);">
-        <span>${c.avatar}</span>
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:5px;border:1px solid #000;background:${Utils.spriteGradient(c.id)};">${c.avatar}</span>
         <span style="font-size:.75rem;color:var(--txt2);flex:1;">${c.name}</span>
         <div style="width:55px;height:4px;background:var(--bg);border-radius:2px;overflow:hidden;">
           <div style="height:100%;background:var(--hp-color);width:${Utils.pct(c.stats.hp, c.stats.maxHp)}%"></div>
@@ -2198,6 +2276,7 @@ const UI = {
 
     // Enemigo
     document.getElementById('cf-enemy-avatar').textContent = e.avatar;
+    document.getElementById('cf-enemy-avatar').style.background = Utils.spriteGradient(e.id);
     document.getElementById('cf-enemy-name').textContent = e.name;
     document.getElementById('cf-enemy-level').textContent = 'Nivel ' + e.level;
     document.getElementById('cf-enemy-hp-txt').textContent = `${Math.max(0,e.hp)}/${e.maxHp}`;
@@ -2270,7 +2349,8 @@ const MapEngine = {
       'hoipoi','hoipoi',
       'upgrade',
       'heal','heal',
-      'event'
+      'event',
+      'recruit','recruit'
     ];
     return [pool[Utils.rand(0, pool.length - 1)]];
   },
@@ -2328,7 +2408,7 @@ const MapEngine = {
   },
 
   emoji(type) {
-    return { fight:'🥋', hoipoi:'📦', upgrade:'⚡', heal:'❤️', event:'👤', boss:'👹' }[type] || '?';
+    return { fight:'🥋', hoipoi:'📦', upgrade:'⚡', heal:'❤️', event:'👤', boss:'👹', recruit:'🤝' }[type] || '?';
   },
 
   render(map) {
@@ -2401,7 +2481,7 @@ const MapEngine = {
       // Tooltip
       const tt = document.createElement('div');
       tt.className   = 'node-tooltip';
-      tt.textContent = {fight:'Combate',hoipoi:'Hoi-Poi',upgrade:'Mejora',heal:'Curación',event:'Evento',boss:'⚠ BOSS'}[node.type] || '';
+      tt.textContent = {fight:'Combate',hoipoi:'Hoi-Poi',upgrade:'Mejora',heal:'Curación',event:'Evento',boss:'⚠ BOSS',recruit:'Compañero'}[node.type] || '';
       el.appendChild(tt);
 
       if (node.reachable && !node.visited) {
@@ -2417,7 +2497,15 @@ const MapEngine = {
     if (!node) return;
     node.visited = true;
     node.reachable = false;
-    // Habilitar conexiones
+
+    // Al elegir un nodo, se bloquea cualquier otro nodo de su misma columna
+    // que no haya sido visitado: solo se puede tomar 1 ruta por fila/columna
+    // y no se puede retroceder a una opción descartada.
+    map.nodes[node.col].forEach(sibling => {
+      if (sibling.id !== node.id && !sibling.visited) sibling.reachable = false;
+    });
+
+    // Habilitar solo las conexiones del nodo elegido
     for (const connId of node.connections) {
       const conn = map.flat.find(n => n.id === connId);
       if (conn && !conn.visited) conn.reachable = true;
@@ -2474,6 +2562,7 @@ const Combat = {
     document.getElementById('combat-techs-panel').classList.remove('open');
 
     UI.show('combat');
+    this.setActionsEnabled(true);
     UI.updateCombatUI();
     UI.addLog(`¡Comienza el combate contra ${enemy.name}!`, 'info');
   },
@@ -3093,6 +3182,50 @@ const EventEngine = {
 };
 
 /* ════════════════════════════════════════════════════════════════
+   RECLUTAMIENTO DE COMPAÑEROS
+════════════════════════════════════════════════════════════════ */
+const Recruit = {
+  _candidate: null,
+
+  show() {
+    const available = COMPANIONS_POOL.filter(c => !State.companions.find(sc => sc.id === c.id));
+    if (State.companions.length >= 2 || available.length === 0) {
+      // Sin hueco en el equipo o ya reclutados todos: encuentro amistoso alternativo
+      const gain = 15;
+      State.player.hp = Math.min(State.player.maxHp, State.player.hp + gain);
+      UI.updateSidebar();
+      Game._showHeal(gain, 'Te cruzas con un viajero amistoso, pero tu equipo ya está completo. Te deja algo de comida antes de seguir su camino.');
+      return;
+    }
+    const candidate = available[Utils.rand(0, available.length - 1)];
+    this._candidate = candidate;
+
+    const avatarEl = document.getElementById('recruit-avatar');
+    avatarEl.textContent = candidate.avatar;
+    avatarEl.style.background = Utils.spriteGradient(candidate.id);
+    document.getElementById('recruit-name').textContent = candidate.name;
+    document.getElementById('recruit-desc').textContent =
+      `HP ${candidate.stats.hp} · ATK ${candidate.stats.atk} · DEF ${candidate.stats.def} · SPD ${candidate.stats.spd}. Pasiva: ${candidate.passive}`;
+    UI.show('recruit');
+  },
+
+  accept() {
+    if (this._candidate) {
+      State.companions.push(this._candidate);
+      UI.toast(`🤝 ¡${this._candidate.name} se une al equipo!`, 'good');
+    }
+    this._candidate = null;
+    UI.updateSidebar();
+    Game.afterEvent();
+  },
+
+  decline() {
+    this._candidate = null;
+    Game.afterEvent();
+  }
+};
+
+/* ════════════════════════════════════════════════════════════════
    GAME CONTROLLER
 ════════════════════════════════════════════════════════════════ */
 const Game = {
@@ -3221,6 +3354,9 @@ const Game = {
         break;
       case 'boss':
         this.showBossIntro();
+        break;
+      case 'recruit':
+        Recruit.show();
         break;
     }
   },

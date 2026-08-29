@@ -2216,189 +2216,6 @@ const UI = {
 };
 
 
-  toast(msg, type = 'info') {
-    const c = document.getElementById('toast-container');
-    const t = document.createElement('div');
-    t.className = 'toast';
-    t.textContent = msg;
-    if (type === 'good')  t.style.borderColor = 'var(--green)';
-    if (type === 'bad')   t.style.borderColor = 'var(--red)';
-    if (type === 'gold')  t.style.borderColor = 'var(--gold)';
-    c.appendChild(t);
-    setTimeout(() => { t.classList.add('fade-out'); setTimeout(() => t.remove(), 350); }, 2500);
-  },
-
-  floatDmg(text, x, y, cls = 'phys') {
-    const d = document.createElement('div');
-    d.className = `dmg-float ${cls}`;
-    d.textContent = text;
-    d.style.left = x + 'px';
-    d.style.top = y + 'px';
-    document.body.appendChild(d);
-    setTimeout(() => d.remove(), 950);
-  },
-
-  showModal(id) { document.getElementById(id).classList.add('open'); },
-  closeModal(id) { document.getElementById(id).classList.remove('open'); },
-
-  showInventoryModal() {
-    const body = document.getElementById('modal-inventory-body');
-    if (State.inventory.length === 0) {
-      body.innerHTML = '<p style="color:var(--txt3);font-size:.88rem;">El inventario está vacío.</p>';
-    } else {
-      body.innerHTML = State.inventory.map(item => `
-        <div style="display:flex;align-items:center;gap:.8rem;padding:.6rem;background:var(--bg3);border-radius:var(--rad);border:1px solid var(--border);margin-bottom:.35rem;">
-          <span style="font-size:1.4rem;">${item.emoji}</span>
-          <div>
-            <div style="font-size:.85rem;font-weight:600;color:var(--txt);">${item.name}</div>
-            <div style="font-size:.75rem;color:var(--txt2);">${item.desc}</div>
-          </div>
-          <span style="margin-left:auto;font-size:.7rem;color:var(--txt3);text-transform:uppercase;">${item.type === 'consumable' ? 'Uso' : 'Pasivo'}</span>
-        </div>
-      `).join('');
-    }
-    this.showModal('modal-inventory');
-  },
-
-  /* Actualiza sidebar del mapa */
-  updateSidebar() {
-    const p = State.player;
-    if (!p) return;
-    document.getElementById('sb-avatar').textContent = p.avatar;
-    document.getElementById('sb-name').textContent = p.name;
-    document.getElementById('sb-level').textContent = 'Nivel ' + p.level;
-    document.getElementById('sb-hp-txt').textContent = `${p.hp}/${p.maxHp}`;
-    document.getElementById('sb-hp-bar').style.width = Utils.pct(p.hp, p.maxHp) + '%';
-    document.getElementById('sb-ki-txt').textContent = `${p.ki}/${p.maxKi}`;
-    document.getElementById('sb-ki-bar').style.width = Utils.pct(p.ki, p.maxKi) + '%';
-
-    // Compañeros
-    const cl = document.getElementById('sb-companions');
-    if (State.companions.length === 0) {
-      cl.innerHTML = '<div style="font-size:.78rem;color:var(--txt3);">Sin compañeros aún.</div>';
-    } else {
-      cl.innerHTML = State.companions.map(c => `
-        <div class="companion-row">
-          <span class="companion-avatar">${c.avatar}</span>
-          <div class="companion-info">
-            <div class="companion-name">${c.name}</div>
-            <div class="companion-hp-bar"><div class="companion-hp-fill" style="width:${Utils.pct(c.stats.hp, c.stats.maxHp)}%"></div></div>
-          </div>
-          <span style="font-size:.7rem;color:var(--txt3);">${c.stats.hp}/${c.stats.maxHp}</span>
-        </div>
-      `).join('');
-    }
-
-    // Inventario rápido
-    const inv = document.getElementById('sb-inventory');
-    const slots = [];
-    for (let i = 0; i < 6; i++) {
-      const item = State.inventory[i];
-      if (item) {
-        slots.push(`<div class="inv-slot" title="${item.name}">${item.emoji}</div>`);
-      } else {
-        slots.push(`<div class="inv-slot empty">·</div>`);
-      }
-    }
-    inv.innerHTML = slots.join('');
-
-    // Dragon Balls
-    const dbs = document.getElementById('sb-dragonballs');
-    dbs.innerHTML = State.dragonBalls.map((found, i) => `
-      <div class="db-mini ${found ? 'found' : ''}" title="${i+1} estrellas">
-        <span class="db-mini-stars">${'★'.repeat(i+1)}</span>
-      </div>
-    `).join('');
-  },
-
-  /* Actualiza barras de combate */
-  updateCombatUI() {
-    const cs = State.combatState;
-    if (!cs) return;
-    const p = cs.player;
-    const e = cs.enemy;
-
-    document.getElementById('cf-player-name').textContent = p.name;
-    document.getElementById('cf-player-level').textContent = 'Nivel ' + p.level;
-    document.getElementById('cf-player-avatar').textContent = p.avatar;
-    document.getElementById('cf-player-hp-txt').textContent = `${Math.max(0,p.hp)}/${p.maxHp}`;
-    document.getElementById('cf-player-hp-bar').style.width = Utils.pct(p.hp, p.maxHp) + '%';
-    document.getElementById('cf-player-ki-txt').textContent = `${p.ki}/${p.maxKi}`;
-    document.getElementById('cf-player-ki-bar').style.width = Utils.pct(p.ki, p.maxKi) + '%';
-
-    document.getElementById('cf-enemy-name').textContent = e.name;
-    document.getElementById('cf-enemy-level').textContent = 'Nivel ' + e.level;
-    document.getElementById('cf-enemy-avatar').textContent = e.avatar;
-    document.getElementById('cf-enemy-hp-txt').textContent = `${Math.max(0,e.hp)}/${e.maxHp}`;
-    document.getElementById('cf-enemy-hp-bar').style.width = Utils.pct(e.hp, e.maxHp) + '%';
-
-    // Cambiar color HP al bajar
-    const hpEl = document.getElementById('cf-player-hp-bar');
-    const pct = Utils.pct(p.hp, p.maxHp);
-    hpEl.style.background = pct > 50 ? 'var(--hp-color)' : pct > 25 ? 'var(--orange)' : 'var(--red)';
-
-    // Reserva
-    const reserve = document.getElementById('cf-team-reserve');
-    reserve.innerHTML = State.companions.map(c => `
-      <div style="display:flex;align-items:center;gap:.5rem;padding:.3rem .5rem;background:var(--bg3);border-radius:var(--rad);border:1px solid var(--border);">
-        <span>${c.avatar}</span>
-        <span style="font-size:.75rem;color:var(--txt2);">${c.name}</span>
-        <div style="flex:1;height:4px;background:var(--bg);border-radius:2px;overflow:hidden;margin-left:.3rem;">
-          <div style="height:100%;background:var(--hp-color);width:${Utils.pct(c.stats.hp, c.stats.maxHp)}%"></div>
-        </div>
-        <span style="font-size:.68rem;color:var(--txt3);">${c.stats.hp}</span>
-      </div>
-    `).join('');
-
-    // Estado boss fase 2
-    const enemyStatus = document.getElementById('cf-enemy-status');
-    if (e.phase2Active) {
-      enemyStatus.innerHTML = '<span class="tag tag-orange">⚠ Fase 2 — Modo Berserk</span>';
-    } else {
-      enemyStatus.innerHTML = '';
-    }
-
-    // Botones
-    document.getElementById('btn-flee').disabled = e.isBoss;
-
-    // Techs
-    this.renderTechButtons();
-  },
-
-  renderTechButtons() {
-    const cs = State.combatState;
-    if (!cs) return;
-    const panel = document.getElementById('combat-techs-panel');
-    const p = cs.player;
-    if (p.techniques.length <= 1) {
-      panel.innerHTML = '<div style="font-size:.8rem;color:var(--txt3);padding:.4rem;">No hay técnicas adicionales disponibles.</div>';
-      return;
-    }
-    panel.innerHTML = p.techniques.map(tech => {
-      const cd = cs.cooldowns[tech.id] || 0;
-      const canUse = p.ki >= tech.cost && cd === 0;
-      return `
-        <button class="tech-btn" onclick="Combat.useTech('${tech.id}')" ${canUse ? '' : 'disabled'}>
-          <span>${tech.emoji}</span>
-          <span>${tech.name}</span>
-          ${tech.cost > 0 ? `<span class="tech-cost">${tech.cost} Ki</span>` : ''}
-          ${cd > 0 ? `<span class="tech-cd">CD: ${cd}</span>` : ''}
-        </button>
-      `;
-    }).join('');
-  },
-
-  addLog(msg, cls = '') {
-    const log = document.getElementById('combat-log');
-    const line = document.createElement('div');
-    line.className = 'log-line ' + cls;
-    line.textContent = msg;
-    log.appendChild(line);
-    log.scrollTop = log.scrollHeight;
-    // Max 20 líneas
-    while (log.children.length > 20) log.removeChild(log.firstChild);
-  }
-};
 
 /* ════════════════════════════════════════════════════════════════
    MAP ENGINE
@@ -3403,6 +3220,22 @@ const Game = {
     UI.show('boss-intro');
   },
 
+  afterEvent() {
+    MapEngine.render(State.map);
+    UI.updateSidebar();
+    UI.show('map');
+    this.save();
+  },
+
+  save() {
+    const data = {
+      player: State.player, companions: State.companions,
+      inventory: State.inventory, dragonBalls: State.dragonBalls,
+      map: State.map, currentNode: State.currentNode,
+      stats: State.stats, bulmaBonus: State.bulmaBonus
+    };
+    localStorage.setItem('db_roguelike_save', JSON.stringify(data));
+  },
 
 
   afterHoipoi() {

@@ -277,14 +277,46 @@ body {
   box-shadow: 0 8px 30px rgba(245,200,66,.2);
 }
 
+.char-card:active { transform: translateY(-1px) scale(.98); }
+
 .char-card:hover::before, .char-card.selected::before { opacity: 1; }
 
 .char-avatar {
-  font-size: 4rem;
-  text-align: center;
-  margin-bottom: 1rem;
+  width: 108px;
+  height: 108px;
+  margin: 0 auto 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3.1rem;
   line-height: 1;
+  border-radius: 10px;
+  border: 3px solid #000;
+  outline: 2px solid var(--border);
+  outline-offset: 3px;
+  position: relative;
+  overflow: hidden;
 }
+
+.char-avatar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(0deg, rgba(255,255,255,.06) 0px, rgba(255,255,255,.06) 2px, transparent 2px, transparent 4px);
+  pointer-events: none;
+}
+
+.char-avatar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 14px rgba(0,0,0,.5);
+  pointer-events: none;
+}
+
+.char-card[data-char="goku"] .char-avatar    { background: linear-gradient(160deg, #ffc978 0%, #e87c2a 55%, #96420c 100%); }
+.char-card[data-char="krillin"] .char-avatar { background: linear-gradient(160deg, #a9d0ff 0%, #4a8fe8 55%, #1d4f9c 100%); }
+.char-card[data-char="bulma"] .char-avatar   { background: linear-gradient(160deg, #d8bbff 0%, #9b5de5 55%, #562a91 100%); }
 
 .char-name {
   font-family: var(--font-title);
@@ -2612,8 +2644,8 @@ const Combat = {
     );
 
     // Número flotante
-    const rect = document.getElementById(isPlayerAttacking ? 'cf-enemy-avatar' : 'cf-player-avatar').getBoundingClientRect();
-    UI.floatDmg(crit ? `💥${dmg}` : `-${dmg}`, rect.left, rect.top, crit ? 'crit' : (tech.type === 'ki' ? 'ki' : 'phys'));
+    const targetEl = document.getElementById(isPlayerAttacking ? 'cf-enemy-avatar' : 'cf-player-avatar');
+    UI.floatDmg(crit ? `💥${dmg}` : `-${dmg}`, targetEl, crit ? 'crit' : (tech.type === 'ki' ? 'ki' : 'phys'));
 
     // Boss fase 2
     if (e.isBoss && !e.phase2Active && e.hp / e.maxHp <= e.phase2Trigger) {
@@ -2731,8 +2763,7 @@ const Combat = {
       p.hp = p.maxHp;
       State.player.hp = p.maxHp;
       UI.addLog(`${p.name} usa ${item.name}. ¡HP restaurado al máximo!`, 'heal');
-      const rect = document.getElementById('cf-player-avatar').getBoundingClientRect();
-      UI.floatDmg(`+${p.maxHp}`, rect.left, rect.top, 'heal');
+      UI.floatDmg(`+${p.maxHp}`, document.getElementById('cf-player-avatar'), 'heal');
     } else if (item.effect === 'heal30') {
       const gain = Math.min(30, p.maxHp - p.hp);
       p.hp += gain;
@@ -3110,7 +3141,7 @@ const Game = {
     grid.innerHTML = Object.values(CHARACTERS).map(char => {
       const maxStat = 100;
       return `
-        <div class="char-card" data-char="${char.id}">
+        <div class="char-card" data-char="${char.id}" onclick="Game.selectChar('${char.id}')">
           <div class="char-avatar">${char.avatar}</div>
           <div class="char-name">${char.name}</div>
           <div class="char-style">${char.style}</div>
@@ -3130,7 +3161,7 @@ const Game = {
             <div class="char-techs-label">Técnicas iniciales</div>
             ${char.techniques.map(t => `<span class="tech-pill">${t.emoji} ${t.name}</span>`).join('')}
           </div>
-          <button class="char-select-btn" onclick="Game.selectChar('${char.id}')">Elegir a ${char.name.split(' ')[0]}</button>
+          <button class="char-select-btn" onclick="event.stopPropagation(); Game.selectChar('${char.id}')">Elegir a ${char.name.split(' ')[0]}</button>
         </div>
       `;
     }).join('');

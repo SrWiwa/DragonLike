@@ -1870,42 +1870,38 @@ const SPRITE_THEME = {
 /* ════════════════════════════════════════════════════════════════
    SILUETAS DE COMBATE — dibujo propio, generado por categoría
    (saiyan / humano / bestia / robot), no artwork oficial ni de fans.
-   Una silueta sólida (postura de combate) + un accesorio de cabeza
-   según la raza/tipo de cada personaje.
+   Busto simple (cabeza + hombros) + un rasgo distintivo de la
+   raza/tipo, en un único color plano — estilo icono, no ilustración.
 ════════════════════════════════════════════════════════════════ */
 const SILHOUETTE_BODY = `
-  <circle cx="50" cy="26" r="13"/>
-  <rect x="45" y="37" width="10" height="7"/>
-  <polygon points="30,44 70,44 64,74 36,74"/>
-  <polygon points="30,46 17,41 13,53 24,60 31,51"/>
-  <polygon points="70,46 83,41 87,53 76,60 69,51"/>
-  <polygon points="38,74 29,100 41,100 45,76"/>
-  <polygon points="62,74 71,100 59,100 55,76"/>
+  <path d="M18 100 Q18 66 50 64 Q82 66 82 100 Z"/>
+  <circle cx="50" cy="41" r="20"/>
 `;
 
 const SILHOUETTE_ACCESSORY = {
   saiyan: `
-    <path d="M22 26 L26 3 L32 20 L36 -1 L42 17 L48 -3 L52 17 L58 -1 L64 20 L68 3 L72 26 Q72 13 50 11 Q28 13 22 26 Z"/>
-    <path d="M62 78 Q80 78 77 64 Q75 55 66 60 Q71 66 66 73 Z"/>
+    <path d="M25 31 L29 9 L36 27 L41 5 L47 25 L50 3 L53 25 L59 5 L64 27 L71 9 L75 31 Q75 18 50 16 Q25 18 25 31 Z"/>
   `,
   human_spiky: `
-    <path d="M24 26 L28 8 L33 22 L38 5 L43 21 L50 6 L57 21 L62 5 L67 22 L72 8 L76 26 Q76 15 50 13 Q24 15 24 26 Z"/>
+    <path d="M29 29 L33 15 L39 25 L45 12 L50 23 L55 12 L61 25 L67 15 L71 29 Q71 20 50 18 Q29 20 29 29 Z"/>
   `,
   human_long: `
-    <path d="M23 24 Q21 46 27 60 L34 55 Q29 42 32 24 Z"/>
-    <path d="M77 24 Q79 46 73 60 L66 55 Q71 42 68 24 Z"/>
-    <path d="M23 22 Q23 2 50 2 Q77 2 77 22 Q77 12 50 10 Q23 12 23 22 Z"/>
+    <path d="M28 27 Q26 52 33 68 L39 62 Q34 48 36 27 Z"/>
+    <path d="M72 27 Q74 52 67 68 L61 62 Q66 48 64 27 Z"/>
+    <path d="M28 25 Q28 7 50 7 Q72 7 72 25 Q72 15 50 13 Q28 15 28 25 Z"/>
   `,
   human_bald: ``,
   beast: `
-    <polygon points="33,16 28,1 40,12"/>
-    <polygon points="67,16 72,1 60,12"/>
-    <ellipse cx="50" cy="31" rx="5" ry="3"/>
+    <polygon points="31,23 26,7 39,19"/>
+    <polygon points="69,23 74,7 61,19"/>
+    <ellipse cx="50" cy="44" rx="4" ry="2.5"/>
   `,
   robot: `
-    <rect x="37" y="13" width="26" height="24" rx="2"/>
-    <line x1="50" y1="13" x2="50" y2="2" stroke="currentColor" stroke-width="3"/>
-    <circle cx="50" cy="2" r="3"/>
+    <rect x="34" y="22" width="32" height="28" rx="3"/>
+    <line x1="50" y1="22" x2="50" y2="9" stroke="currentColor" stroke-width="3"/>
+    <circle cx="50" cy="9" r="3"/>
+    <rect x="41" y="34" width="7" height="4" fill="var(--panel,#14161e)" opacity=".55"/>
+    <rect x="52" y="34" width="7" height="4" fill="var(--panel,#14161e)" opacity=".55"/>
   `
 };
 
@@ -1932,7 +1928,7 @@ const CHAR_CATEGORY = {
 function buildSilhouette(id) {
   const category = CHAR_CATEGORY[id] || 'human_bald';
   const accessory = SILHOUETTE_ACCESSORY[category] || '';
-  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="width:76%;height:76%;color:#14161e;fill:#14161e;">
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="width:82%;height:82%;color:#181a24;fill:#181a24;">
     ${SILHOUETTE_BODY}
     ${accessory}
   </svg>`;
@@ -2067,22 +2063,46 @@ const MAX_COMPANIONS = 6;
 const COMPANIONS_POOL = [
   { id: 'oolong_c', name: 'Oolong', avatar: '🐷',
     stats: { hp: 35, maxHp: 35, atk: 5, def: 8, spd: 7, ki: 20, maxKi: 20 },
-    passive: 'Transformación: 20% de esquivar el primer ataque.' },
+    passive: 'Transformación: 20% de esquivar el primer ataque.',
+    moves: [
+      { id: 'basic', name: 'Golpe', icon: '👊', mult: 1.0, cost: 0 },
+      { id: 'special', name: 'Transformación Sorpresa', icon: '🐗', mult: 1.5, cost: 8 }
+    ] },
   { id: 'puar_c', name: 'Puar', avatar: '🐱',
     stats: { hp: 25, maxHp: 25, atk: 4, def: 5, spd: 15, ki: 15, maxKi: 15 },
-    passive: 'Scout: revela el tipo de la siguiente casilla.' },
+    passive: 'Scout: revela el tipo de la siguiente casilla.',
+    moves: [
+      { id: 'basic', name: 'Zarpazo', icon: '👊', mult: 1.0, cost: 0 },
+      { id: 'special', name: 'Copia Veloz', icon: '💫', mult: 1.4, cost: 6 }
+    ] },
   { id: 'roshi_c', name: 'Maestro Roshi', avatar: '🧙',
     stats: { hp: 45, maxHp: 45, atk: 10, def: 6, spd: 5, ki: 30, maxKi: 30 },
-    passive: 'Veterano: sus ataques ignoran parte de la defensa enemiga.' },
+    passive: 'Veterano: sus ataques ignoran parte de la defensa enemiga.',
+    moves: [
+      { id: 'basic', name: 'Golpe', icon: '👊', mult: 1.0, cost: 0 },
+      { id: 'special', name: 'Kamehameha', icon: '🌊', mult: 2.1, cost: 16 }
+    ] },
   { id: 'tien_c', name: 'Tien Shinhan', avatar: '👁️',
     stats: { hp: 50, maxHp: 50, atk: 9, def: 9, spd: 8, ki: 25, maxKi: 25 },
-    passive: 'Tri-Sentido: resistente, aguanta más golpes.' },
+    passive: 'Tri-Sentido: resistente, aguanta más golpes.',
+    moves: [
+      { id: 'basic', name: 'Golpe', icon: '👊', mult: 1.0, cost: 0 },
+      { id: 'special', name: 'Ataque Doble', icon: '✌️', mult: 1.7, cost: 12 }
+    ] },
   { id: 'chiaotzu_c', name: 'Chaoz', avatar: '🎐',
     stats: { hp: 20, maxHp: 20, atk: 6, def: 4, spd: 18, ki: 20, maxKi: 20 },
-    passive: 'Psíquico: ataca primero casi siempre por su velocidad.' },
+    passive: 'Psíquico: ataca primero casi siempre por su velocidad.',
+    moves: [
+      { id: 'basic', name: 'Golpe', icon: '👊', mult: 1.0, cost: 0 },
+      { id: 'special', name: 'Golpe Psíquico', icon: '🔮', mult: 1.5, cost: 10 }
+    ] },
   { id: 'yamcha_c', name: 'Yamcha', avatar: '🏜️',
     stats: { hp: 40, maxHp: 40, atk: 8, def: 6, spd: 12, ki: 20, maxKi: 20 },
-    passive: 'Puño del Lobo: daño equilibrado y constante.' }
+    passive: 'Puño del Lobo: daño equilibrado y constante.',
+    moves: [
+      { id: 'basic', name: 'Golpe', icon: '👊', mult: 1.0, cost: 0 },
+      { id: 'special', name: 'Puño del Lobo', icon: '🐺', mult: 1.8, cost: 12 }
+    ] }
 ];
 
 /* ════════════════════════════════════════════════════════════════
@@ -2404,20 +2424,29 @@ const UI = {
       efEl.innerHTML = effs.join('');
     }
 
-    // Compañeros: cada uno con su propio botón de ataque manual
+    // Compañeros: cada uno con su propio panel y botones para elegir
+    // QUÉ ataque usar (no solo cuándo atacan)
     const reserve = document.getElementById('cf-team-reserve');
     reserve.innerHTML = State.companions.map(c => {
       const ko = c.stats.hp <= 0;
       const acted = !!cs.companionActed[c.id];
+      const moves = c.moves || [{ id: 'basic', name: 'Golpe', icon: '👊', mult: 1, cost: 0 }];
+      const moveBtns = moves.map(m => {
+        const noKi = c.stats.ki < m.cost;
+        const dis = ko || acted || cs.over || noKi;
+        return `<button class="companion-atk-btn" ${dis ? 'disabled' : ''} title="${m.name}${m.cost ? ' (' + m.cost + ' Ki)' : ''}" onclick="Combat.companionAttack('${c.id}','${m.id}')">${m.icon}</button>`;
+      }).join('');
       return `
-      <div style="display:flex;align-items:center;gap:.5rem;padding:.3rem .5rem;background:var(--bg3);border-radius:var(--rad);border:1px solid var(--border);opacity:${ko ? .45 : 1};">
-        <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:5px;border:1px solid #000;background:${Utils.spriteGradient(c.id)};overflow:hidden;">${buildSilhouette(c.id)}</span>
-        <span style="font-size:.75rem;color:var(--txt2);flex:1;">${c.name}${ko ? ' (K.O.)' : ''}</span>
-        <div style="width:45px;height:4px;background:var(--bg);border-radius:2px;overflow:hidden;">
-          <div style="height:100%;background:var(--hp-color);width:${Utils.pct(c.stats.hp, c.stats.maxHp)}%"></div>
+      <div style="padding:.35rem .5rem;background:var(--bg3);border-radius:var(--rad);border:1px solid var(--border);opacity:${ko ? .45 : 1};">
+        <div style="display:flex;align-items:center;gap:.5rem;">
+          <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:5px;border:1px solid #000;background:${Utils.spriteGradient(c.id)};overflow:hidden;">${buildSilhouette(c.id)}</span>
+          <span style="font-size:.75rem;color:var(--txt2);flex:1;">${c.name}${ko ? ' (K.O.)' : ''}</span>
+          <div style="width:40px;height:4px;background:var(--bg);border-radius:2px;overflow:hidden;">
+            <div style="height:100%;background:var(--hp-color);width:${Utils.pct(c.stats.hp, c.stats.maxHp)}%"></div>
+          </div>
+          <span style="font-size:.65rem;color:var(--txt3);">${Math.max(0,c.stats.hp)}</span>
         </div>
-        <span style="font-size:.68rem;color:var(--txt3);">${Math.max(0,c.stats.hp)}</span>
-        <button class="companion-atk-btn" ${ko || acted || cs.over ? 'disabled' : ''} onclick="Combat.companionAttack('${c.id}')">⚔</button>
+        <div style="display:flex;gap:.3rem;margin-top:.3rem;justify-content:flex-end;">${moveBtns}</div>
       </div>`;
     }).join('');
 
@@ -2479,18 +2508,32 @@ const UI = {
    MAP ENGINE
 ════════════════════════════════════════════════════════════════ */
 const MapEngine = {
-  COLS: 9,
-  ROWS: 4,
+  COLS: 11,
   NODE_W: 90,
   NODE_H: 100,
   MARGIN_X: 60,
   MARGIN_Y: 60,
 
-  /* Tipos de nodo por columna */
-  nodeTypesByCol(col) {
-    if (col === 0) return ['fight','fight','heal','fight'];
+  /* Genera los tipos de nodo de una columna al vuelo, siempre al azar,
+     así ninguna columna es igual entre partidas (antes la 1ª y la
+     penúltima estaban fijas siempre con el mismo array). */
+  typesForCol(col, count) {
     if (col === this.COLS - 1) return ['boss'];
-    if (col === this.COLS - 2) return ['heal','fight','event','upgrade'];
+
+    if (col === 0) {
+      // Primera columna: mezcla aleatoria de combates y algún descanso
+      const arr = [];
+      for (let i = 0; i < count; i++) arr.push(Math.random() < 0.25 ? 'heal' : 'fight');
+      return arr;
+    }
+
+    if (col === this.COLS - 2) {
+      const pool = ['heal', 'fight', 'event', 'upgrade', 'recruit'];
+      const arr = [];
+      for (let i = 0; i < count; i++) arr.push(pool[Utils.rand(0, pool.length - 1)]);
+      return arr;
+    }
+
     const pool = [
       'fight','fight','fight',
       'hoipoi','hoipoi',
@@ -2499,26 +2542,31 @@ const MapEngine = {
       'event',
       'recruit','recruit'
     ];
-    return [pool[Utils.rand(0, pool.length - 1)]];
+    const arr = [];
+    for (let i = 0; i < count; i++) arr.push(pool[Utils.rand(0, pool.length - 1)]);
+    return arr;
   },
 
   generate() {
     const cols = this.COLS;
-    const rows = this.ROWS;
+    // El "grosor" del mapa cambia cada partida (entre 3 y 5 rutas por fila)
+    const baseRows = Utils.rand(3, 5);
     const nodes = [];
     let id = 0;
 
-    // Generar nodos
+    // Generar nodos: cada columna varía ligeramente su número de filas
     for (let c = 0; c < cols; c++) {
       const colNodes = [];
-      const numRows = c === cols - 1 ? 1 : rows;
+      let numRows;
+      if (c === cols - 1) numRows = 1; // boss, siempre solo
+      else numRows = Utils.clamp(baseRows + Utils.rand(-1, 1), 3, 5);
+
+      const types = this.typesForCol(c, numRows);
       for (let r = 0; r < numRows; r++) {
-        const types = this.nodeTypesByCol(c);
-        const type = types[Math.min(r, types.length - 1)];
         colNodes.push({
           id: id++,
           col: c, row: r,
-          type,
+          type: types[r],
           visited: false,
           reachable: c === 0,
           connections: [] // ids de nodos en col+1 conectados
@@ -2527,33 +2575,35 @@ const MapEngine = {
       nodes.push(colNodes);
     }
 
-    // Conectar columnas: cada nodo se conecta con el de su misma fila
-    // en la siguiente columna Y los de las filas contiguas (arriba/abajo).
-    // Así, al avanzar, se desbloquean 2-3 rutas (la que toca + los lados),
-    // no solo 1.
+    const rows = Math.max(...nodes.map(c => c.length));
+
+    // Conectar columnas por POSICIÓN RELATIVA (no por índice de fila exacto,
+    // ya que cada columna puede tener un número distinto de filas). Cada
+    // nodo se conecta con el más cercano en la siguiente columna y con
+    // 1-2 vecinos: así se desbloquean 2-3 rutas al avanzar, nunca solo 1.
+    const relPos = (node, colLen) => colLen === 1 ? 0.5 : node.row / (colLen - 1);
+
     for (let c = 0; c < cols - 1; c++) {
       const cur = nodes[c];
       const nxt = nodes[c + 1];
       for (const node of cur) {
-        for (let dr = -1; dr <= 1; dr++) {
-          const targetRow = node.row + dr;
-          const candidate = nxt.find(n => n.row === targetRow);
-          if (candidate && !node.connections.includes(candidate.id)) {
-            node.connections.push(candidate.id);
-          }
-        }
-        // Si por diferencias de tamaño de columna no logró ninguna conexión,
-        // conecta al menos con el nodo más cercano en fila.
-        if (node.connections.length === 0 && nxt.length > 0) {
-          const closest = [...nxt].sort((a, b) => Math.abs(a.row - node.row) - Math.abs(b.row - node.row))[0];
-          node.connections.push(closest.id);
-        }
+        const curPos = relPos(node, cur.length);
+        const sorted = [...nxt].sort((a, b) =>
+          Math.abs(relPos(a, nxt.length) - curPos) - Math.abs(relPos(b, nxt.length) - curPos)
+        );
+        const connCount = Math.min(sorted.length, Utils.rand(2, 3));
+        sorted.slice(0, connCount).forEach(n => {
+          if (!node.connections.includes(n.id)) node.connections.push(n.id);
+        });
       }
       // Asegurar que cada nodo del siguiente está conectado al menos una vez
       for (const nxtNode of nxt) {
         const hasIncoming = cur.some(n => n.connections.includes(nxtNode.id));
         if (!hasIncoming) {
-          const src = [...cur].sort((a, b) => Math.abs(a.row - nxtNode.row) - Math.abs(b.row - nxtNode.row))[0];
+          const nxtPos = relPos(nxtNode, nxt.length);
+          const src = [...cur].sort((a, b) =>
+            Math.abs(relPos(a, cur.length) - nxtPos) - Math.abs(relPos(b, cur.length) - nxtPos)
+          )[0];
           if (!src.connections.includes(nxtNode.id)) src.connections.push(nxtNode.id);
         }
       }
@@ -2842,24 +2892,29 @@ const Combat = {
   },
 
   /* Ataque manual de un compañero — el jugador elige cuándo atacan */
-  companionAttack(companionId) {
+  companionAttack(companionId, moveId) {
     const cs = State.combatState;
     if (!cs || cs.over) return;
     const c = State.companions.find(x => x.id === companionId);
     if (!c || c.stats.hp <= 0) return;
     if (cs.companionActed[companionId]) return;
 
+    const moves = c.moves || [{ id: 'basic', name: 'Golpe', icon: '👊', mult: 1, cost: 0 }];
+    const move = moves.find(m => m.id === moveId) || moves[0];
+    if (c.stats.ki < move.cost) { UI.toast(`${c.name} no tiene suficiente Ki.`, 'bad'); return; }
+
     const ti = this._currentTarget(cs);
     if (ti < 0) return;
     const enemy = cs.enemies[ti];
 
-    let dmg = Math.round(Math.max(1, c.stats.atk - (enemy.def * 0.5)));
+    c.stats.ki -= move.cost;
+    let dmg = Math.round(Math.max(1, (c.stats.atk * (move.mult || 1)) - (enemy.def * 0.5)));
     let crit = false;
     if (Math.random() < 0.10) { dmg = Math.round(dmg * 1.5); crit = true; }
     enemy.hp -= dmg;
     cs.companionActed[companionId] = true;
 
-    UI.addLog(`${c.name} ataca a ${enemy.name} → ${dmg} daño.${crit ? ' ¡CRÍTICO!' : ''}`, crit ? 'crit' : 'hit');
+    UI.addLog(`${c.name} usa ${move.name} → ${dmg} daño a ${enemy.name}.${crit ? ' ¡CRÍTICO!' : ''}`, crit ? 'crit' : 'hit');
     UI.floatDmg(crit ? `💥${dmg}` : `-${dmg}`, document.querySelector(`.enemy-card[data-idx="${ti}"] .fighter-avatar`), crit ? 'crit' : 'phys');
 
     if (enemy.hp <= 0) {

@@ -699,14 +699,76 @@ body {
 
 .combat-arena {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: 1fr auto 1.5fr;
   gap: 1rem;
-  align-items: center;
-  max-width: 700px;
+  align-items: start;
+  max-width: 820px;
   margin: 0 auto;
   width: 100%;
   padding: 1rem 0;
 }
+
+.enemy-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .6rem;
+  justify-content: center;
+  align-content: flex-start;
+}
+
+.enemy-card {
+  background: var(--panel);
+  border: 2px solid var(--border);
+  border-radius: var(--rad2);
+  padding: .6rem;
+  width: 108px;
+  text-align: center;
+  cursor: pointer;
+  transition: all .15s;
+}
+.enemy-card:hover { border-color: var(--red); }
+.enemy-card.selected {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px rgba(245,200,66,.35);
+}
+.enemy-card.ko {
+  opacity: .35;
+  filter: grayscale(1);
+  cursor: default;
+  pointer-events: none;
+}
+.enemy-card .fighter-avatar {
+  width: 46px; height: 46px;
+  margin: 0 auto .35rem;
+}
+.enemy-card-name {
+  font-size: .68rem;
+  font-weight: 600;
+  color: var(--txt);
+  margin-bottom: .3rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.enemy-card-hp {
+  font-size: .62rem;
+  color: var(--txt3);
+  margin-top: .2rem;
+}
+.enemy-card .combat-bar { height: 6px; }
+
+.companion-atk-btn {
+  font-size: .65rem;
+  padding: .2rem .45rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--txt2);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.companion-atk-btn:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); }
+.companion-atk-btn:disabled { opacity: .35; cursor: default; }
 
 .fighter-panel {
   background: var(--panel);
@@ -1083,8 +1145,17 @@ body {
 }
 
 .boss-flash {
-  font-size: 5rem;
-  margin-bottom: 1rem;
+  width: 130px;
+  height: 130px;
+  margin: 0 auto 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  border: 3px solid #000;
+  outline: 2px solid var(--red);
+  outline-offset: 3px;
+  overflow: hidden;
   animation: bossEntrance 1s ease-out;
   filter: drop-shadow(0 0 20px rgba(217,64,64,.6));
 }
@@ -1582,25 +1653,8 @@ body {
 
     <div class="vs-badge">VS</div>
 
-    <!-- Enemigo -->
-    <div class="fighter-panel enemy-panel">
-      <div class="fighter-top" style="flex-direction:row-reverse;text-align:right;">
-        <div class="fighter-avatar" id="cf-enemy-avatar">👹</div>
-        <div>
-          <div class="fighter-name" id="cf-enemy-name">Enemigo</div>
-          <div class="fighter-level" id="cf-enemy-level">Nivel 1</div>
-        </div>
-      </div>
-      <div class="combat-bar-wrap">
-        <div class="combat-bar-label">
-          <span>HP</span>
-          <span id="cf-enemy-hp-txt">50/50</span>
-        </div>
-        <div class="combat-bar"><div class="combat-bar-fill hp" id="cf-enemy-hp-bar" style="width:100%"></div></div>
-      </div>
-      <div style="margin-top:.5rem;" id="cf-enemy-status"></div>
-      <div style="margin-top:.4rem;font-size:.72rem;color:var(--txt3);line-height:1.4;" id="cf-enemy-desc"></div>
-    </div>
+    <!-- Enemigos (1 a 6 rivales) -->
+    <div class="enemy-group" id="cf-enemies"></div>
   </div>
 
   <!-- Log -->
@@ -1621,6 +1675,9 @@ body {
     </button>
     <button class="action-btn" id="btn-flee" onclick="Combat.playerAction('flee')">
       💨 Huir
+    </button>
+    <button class="action-btn" id="btn-pass" onclick="Combat.passTurn()" style="flex-basis:100%;margin-top:.4rem;background:var(--bg3);">
+      ▶ Pasar turno
     </button>
   </div>
   <div class="combat-techs-panel" id="combat-techs-panel"></div>
@@ -1811,6 +1868,77 @@ const SPRITE_THEME = {
 };
 
 /* ════════════════════════════════════════════════════════════════
+   SILUETAS DE COMBATE — dibujo propio, generado por categoría
+   (saiyan / humano / bestia / robot), no artwork oficial ni de fans.
+   Una silueta sólida (postura de combate) + un accesorio de cabeza
+   según la raza/tipo de cada personaje.
+════════════════════════════════════════════════════════════════ */
+const SILHOUETTE_BODY = `
+  <circle cx="50" cy="26" r="13"/>
+  <rect x="45" y="37" width="10" height="7"/>
+  <polygon points="30,44 70,44 64,74 36,74"/>
+  <polygon points="30,46 17,41 13,53 24,60 31,51"/>
+  <polygon points="70,46 83,41 87,53 76,60 69,51"/>
+  <polygon points="38,74 29,100 41,100 45,76"/>
+  <polygon points="62,74 71,100 59,100 55,76"/>
+`;
+
+const SILHOUETTE_ACCESSORY = {
+  saiyan: `
+    <path d="M22 26 L26 3 L32 20 L36 -1 L42 17 L48 -3 L52 17 L58 -1 L64 20 L68 3 L72 26 Q72 13 50 11 Q28 13 22 26 Z"/>
+    <path d="M62 78 Q80 78 77 64 Q75 55 66 60 Q71 66 66 73 Z"/>
+  `,
+  human_spiky: `
+    <path d="M24 26 L28 8 L33 22 L38 5 L43 21 L50 6 L57 21 L62 5 L67 22 L72 8 L76 26 Q76 15 50 13 Q24 15 24 26 Z"/>
+  `,
+  human_long: `
+    <path d="M23 24 Q21 46 27 60 L34 55 Q29 42 32 24 Z"/>
+    <path d="M77 24 Q79 46 73 60 L66 55 Q71 42 68 24 Z"/>
+    <path d="M23 22 Q23 2 50 2 Q77 2 77 22 Q77 12 50 10 Q23 12 23 22 Z"/>
+  `,
+  human_bald: ``,
+  beast: `
+    <polygon points="33,16 28,1 40,12"/>
+    <polygon points="67,16 72,1 60,12"/>
+    <ellipse cx="50" cy="31" rx="5" ry="3"/>
+  `,
+  robot: `
+    <rect x="37" y="13" width="26" height="24" rx="2"/>
+    <line x1="50" y1="13" x2="50" y2="2" stroke="currentColor" stroke-width="3"/>
+    <circle cx="50" cy="2" r="3"/>
+  `
+};
+
+const CHAR_CATEGORY = {
+  goku:          'saiyan',
+  krillin:       'human_bald',
+  bulma:         'human_long',
+  wolf:          'beast',
+  bandit:        'human_bald',
+  oolong:        'beast',
+  yamcha:        'human_spiky',
+  pilaf_soldier: 'robot',
+  mai:           'human_long',
+  shu:           'beast',
+  pilaf:         'robot',
+  oolong_c:      'beast',
+  puar_c:        'beast',
+  roshi_c:       'human_bald',
+  tien_c:        'human_bald',
+  chiaotzu_c:    'human_bald',
+  yamcha_c:      'human_spiky'
+};
+
+function buildSilhouette(id) {
+  const category = CHAR_CATEGORY[id] || 'human_bald';
+  const accessory = SILHOUETTE_ACCESSORY[category] || '';
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="width:76%;height:76%;color:#14161e;fill:#14161e;">
+    ${SILHOUETTE_BODY}
+    ${accessory}
+  </svg>`;
+}
+
+/* ════════════════════════════════════════════════════════════════
    DATOS — PERSONAJES
 ════════════════════════════════════════════════════════════════ */
 const CHARACTERS = {
@@ -1934,13 +2062,27 @@ const ITEMS = {
 /* ════════════════════════════════════════════════════════════════
    DATOS — COMPAÑEROS RECLUTABLES
 ════════════════════════════════════════════════════════════════ */
+const MAX_COMPANIONS = 6;
+
 const COMPANIONS_POOL = [
   { id: 'oolong_c', name: 'Oolong', avatar: '🐷',
     stats: { hp: 35, maxHp: 35, atk: 5, def: 8, spd: 7, ki: 20, maxKi: 20 },
     passive: 'Transformación: 20% de esquivar el primer ataque.' },
   { id: 'puar_c', name: 'Puar', avatar: '🐱',
     stats: { hp: 25, maxHp: 25, atk: 4, def: 5, spd: 15, ki: 15, maxKi: 15 },
-    passive: 'Scout: revela el tipo de la siguiente casilla.' }
+    passive: 'Scout: revela el tipo de la siguiente casilla.' },
+  { id: 'roshi_c', name: 'Maestro Roshi', avatar: '🧙',
+    stats: { hp: 45, maxHp: 45, atk: 10, def: 6, spd: 5, ki: 30, maxKi: 30 },
+    passive: 'Veterano: sus ataques ignoran parte de la defensa enemiga.' },
+  { id: 'tien_c', name: 'Tien Shinhan', avatar: '👁️',
+    stats: { hp: 50, maxHp: 50, atk: 9, def: 9, spd: 8, ki: 25, maxKi: 25 },
+    passive: 'Tri-Sentido: resistente, aguanta más golpes.' },
+  { id: 'chiaotzu_c', name: 'Chaoz', avatar: '🎐',
+    stats: { hp: 20, maxHp: 20, atk: 6, def: 4, spd: 18, ki: 20, maxKi: 20 },
+    passive: 'Psíquico: ataca primero casi siempre por su velocidad.' },
+  { id: 'yamcha_c', name: 'Yamcha', avatar: '🏜️',
+    stats: { hp: 40, maxHp: 40, atk: 8, def: 6, spd: 12, ki: 20, maxKi: 20 },
+    passive: 'Puño del Lobo: daño equilibrado y constante.' }
 ];
 
 /* ════════════════════════════════════════════════════════════════
@@ -2022,7 +2164,7 @@ const HOIPOI_TABLE = [
     return LEARNABLE_TECHS[techId];
   }},
   { weight: 12, type: 'companion', generate: () => {
-    if (State.companions.length >= 2) return null;
+    if (State.companions.length >= MAX_COMPANIONS) return null;
     const available = COMPANIONS_POOL.filter(c => !State.companions.find(sc => sc.id === c.id));
     if (available.length === 0) return null;
     return available[Math.floor(Math.random() * available.length)];
@@ -2199,7 +2341,7 @@ const UI = {
     // Compañeros
     const cl = document.getElementById('sb-companions');
     const cc = document.getElementById('sb-companions-count');
-    if (cc) cc.textContent = `(${State.companions.length}/2)`;
+    if (cc) cc.textContent = `(${State.companions.length}/${MAX_COMPANIONS})`;
     if (!State.companions.length) {
       cl.innerHTML = '<div style="font-size:.78rem;color:var(--txt3);">Sin compañeros aún.</div>';
     } else {
@@ -2236,11 +2378,11 @@ const UI = {
 
   updateCombatUI() {
     const cs = State.combatState; if (!cs) return;
-    const p = cs.player, e = cs.enemy;
+    const p = cs.player;
 
-    document.getElementById('cf-player-avatar').textContent = p.avatar;
+    document.getElementById('cf-player-avatar').innerHTML = buildSilhouette(p.id);
     document.getElementById('cf-player-avatar').style.background = Utils.spriteGradient(p.id);
-    document.getElementById('cf-player-name').textContent = p.name;
+    document.getElementById('cf-player-name').textContent = p.name + (p.hp <= 0 ? ' (derribado)' : '');
     document.getElementById('cf-player-level').textContent = 'Nivel ' + p.level;
     document.getElementById('cf-player-hp-txt').textContent = `${Math.max(0,p.hp)}/${p.maxHp}`;
     document.getElementById('cf-player-ki-txt').textContent = `${p.ki}/${p.maxKi}`;
@@ -2262,37 +2404,42 @@ const UI = {
       efEl.innerHTML = effs.join('');
     }
 
-    // Compañeros reserva
+    // Compañeros: cada uno con su propio botón de ataque manual
     const reserve = document.getElementById('cf-team-reserve');
-    reserve.innerHTML = State.companions.map(c => `
-      <div style="display:flex;align-items:center;gap:.5rem;padding:.3rem .5rem;background:var(--bg3);border-radius:var(--rad);border:1px solid var(--border);">
-        <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:5px;border:1px solid #000;background:${Utils.spriteGradient(c.id)};">${c.avatar}</span>
-        <span style="font-size:.75rem;color:var(--txt2);flex:1;">${c.name}</span>
-        <div style="width:55px;height:4px;background:var(--bg);border-radius:2px;overflow:hidden;">
+    reserve.innerHTML = State.companions.map(c => {
+      const ko = c.stats.hp <= 0;
+      const acted = !!cs.companionActed[c.id];
+      return `
+      <div style="display:flex;align-items:center;gap:.5rem;padding:.3rem .5rem;background:var(--bg3);border-radius:var(--rad);border:1px solid var(--border);opacity:${ko ? .45 : 1};">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:5px;border:1px solid #000;background:${Utils.spriteGradient(c.id)};overflow:hidden;">${buildSilhouette(c.id)}</span>
+        <span style="font-size:.75rem;color:var(--txt2);flex:1;">${c.name}${ko ? ' (K.O.)' : ''}</span>
+        <div style="width:45px;height:4px;background:var(--bg);border-radius:2px;overflow:hidden;">
           <div style="height:100%;background:var(--hp-color);width:${Utils.pct(c.stats.hp, c.stats.maxHp)}%"></div>
         </div>
-        <span style="font-size:.68rem;color:var(--txt3);">${c.stats.hp}</span>
-      </div>`).join('');
+        <span style="font-size:.68rem;color:var(--txt3);">${Math.max(0,c.stats.hp)}</span>
+        <button class="companion-atk-btn" ${ko || acted || cs.over ? 'disabled' : ''} onclick="Combat.companionAttack('${c.id}')">⚔</button>
+      </div>`;
+    }).join('');
 
-    // Enemigo
-    document.getElementById('cf-enemy-avatar').textContent = e.avatar;
-    document.getElementById('cf-enemy-avatar').style.background = Utils.spriteGradient(e.id);
-    document.getElementById('cf-enemy-name').textContent = e.name;
-    document.getElementById('cf-enemy-level').textContent = 'Nivel ' + e.level;
-    document.getElementById('cf-enemy-hp-txt').textContent = `${Math.max(0,e.hp)}/${e.maxHp}`;
-    document.getElementById('cf-enemy-hp-bar').style.width = Utils.pct(e.hp, e.maxHp) + '%';
+    // Enemigos (grupo de 1 a 6)
+    const enemiesEl = document.getElementById('cf-enemies');
+    enemiesEl.innerHTML = cs.enemies.map((en, idx) => {
+      const ko = en.hp <= 0;
+      const selected = idx === cs.targetIdx && !ko;
+      return `
+      <div class="enemy-card ${selected ? 'selected' : ''} ${ko ? 'ko' : ''}" data-idx="${idx}" onclick="Combat.selectTarget(${idx})">
+        <div class="fighter-avatar" style="background:${Utils.spriteGradient(en.id)};">${buildSilhouette(en.id)}</div>
+        <div class="enemy-card-name">${en.name}</div>
+        <div class="combat-bar"><div class="combat-bar-fill hp" style="width:${Utils.pct(en.hp, en.maxHp)}%"></div></div>
+        <div class="enemy-card-hp">${Math.max(0,en.hp)}/${en.maxHp}</div>
+        ${en.phase2Active ? '<div style="margin-top:.25rem;"><span class="tag tag-orange" style="font-size:.55rem;">⚠ Berserk</span></div>' : ''}
+      </div>`;
+    }).join('');
 
-    const descEl = document.getElementById('cf-enemy-desc');
-    if (descEl) descEl.textContent = e.desc || '';
-
-    const enemyStatus = document.getElementById('cf-enemy-status');
-    enemyStatus.innerHTML = e.phase2Active
-      ? '<span class="tag tag-orange">⚠ Modo Berserk — DEF ×1.5</span>'
-      : '';
-
-    document.getElementById('btn-flee').disabled = !!e.isBoss;
     this.renderTechButtons();
   },
+
+
 
   renderTechButtons() {
     const cs = State.combatState; if (!cs) return;
@@ -2332,7 +2479,7 @@ const UI = {
    MAP ENGINE
 ════════════════════════════════════════════════════════════════ */
 const MapEngine = {
-  COLS: 7,
+  COLS: 9,
   ROWS: 4,
   NODE_W: 90,
   NODE_H: 100,
@@ -2380,25 +2527,33 @@ const MapEngine = {
       nodes.push(colNodes);
     }
 
-    // Conectar columnas
+    // Conectar columnas: cada nodo se conecta con el de su misma fila
+    // en la siguiente columna Y los de las filas contiguas (arriba/abajo).
+    // Así, al avanzar, se desbloquean 2-3 rutas (la que toca + los lados),
+    // no solo 1.
     for (let c = 0; c < cols - 1; c++) {
       const cur = nodes[c];
       const nxt = nodes[c + 1];
-      // Cada nodo se conecta a 1 o 2 del siguiente
       for (const node of cur) {
-        const numConns = Utils.rand(1, Math.min(2, nxt.length));
-        const pool = [...nxt];
-        Utils.shuffle ? Utils.shuffle(pool) : pool.sort(() => Math.random() - .5);
-        const chosen = pool.slice(0, numConns);
-        chosen.forEach(n => {
-          if (!node.connections.includes(n.id)) node.connections.push(n.id);
-        });
+        for (let dr = -1; dr <= 1; dr++) {
+          const targetRow = node.row + dr;
+          const candidate = nxt.find(n => n.row === targetRow);
+          if (candidate && !node.connections.includes(candidate.id)) {
+            node.connections.push(candidate.id);
+          }
+        }
+        // Si por diferencias de tamaño de columna no logró ninguna conexión,
+        // conecta al menos con el nodo más cercano en fila.
+        if (node.connections.length === 0 && nxt.length > 0) {
+          const closest = [...nxt].sort((a, b) => Math.abs(a.row - node.row) - Math.abs(b.row - node.row))[0];
+          node.connections.push(closest.id);
+        }
       }
       // Asegurar que cada nodo del siguiente está conectado al menos una vez
       for (const nxtNode of nxt) {
         const hasIncoming = cur.some(n => n.connections.includes(nxtNode.id));
         if (!hasIncoming) {
-          const src = cur[Utils.rand(0, cur.length - 1)];
+          const src = [...cur].sort((a, b) => Math.abs(a.row - nxtNode.row) - Math.abs(b.row - nxtNode.row))[0];
           if (!src.connections.includes(nxtNode.id)) src.connections.push(nxtNode.id);
         }
       }
@@ -2519,52 +2674,65 @@ const MapEngine = {
 const Combat = {
   techsOpen: false,
 
-  initCombat(enemy, isBoss = false) {
+  /* ── Iniciar combate ──
+     enemyOrEnemies puede ser un enemigo suelto o un array (1 a 6 rivales) */
+  initCombat(enemyOrEnemies, isBoss = false) {
     const p = State.player;
-    // Escalar enemigo al nivel del jugador
-    const lvlOffset = isBoss ? 2 : Utils.rand(-1, 2);
-    const eLvl = Math.max(1, p.level + lvlOffset);
-    const scale = 1 + (eLvl - 1) * 0.18;
+    const rawEnemies = Array.isArray(enemyOrEnemies) ? enemyOrEnemies : [enemyOrEnemies];
 
-    const eStats = {
-      hp:    Math.round(enemy.baseStats.hp * scale),
-      atk:   Math.round(enemy.baseStats.atk * scale),
-      def:   Math.round(enemy.baseStats.def * scale),
-      spd:   Math.round(enemy.baseStats.spd * scale)
-    };
+    // Escalar cada enemigo al nivel del jugador. Si hay varios rivales a
+    // la vez, se suaviza un poco la potencia individual de cada uno para
+    // que el grupo sea justo. El jefe final siempre trae a Mai y Shu,
+    // pero el trío también se suaviza (algo menos que un grupo normal)
+    // para que sea un reto duro y no una pared imposible.
+    const groupScale = rawEnemies.length > 1
+      ? (isBoss
+          ? Math.max(0.78, 1 - 0.08 * (rawEnemies.length - 1))
+          : Math.max(0.55, 1 - 0.2 * (rawEnemies.length - 1)))
+      : 1;
 
-    State.combatState = {
-      player: { ...p },
-      enemy: {
+    const enemies = rawEnemies.map(enemy => {
+      const lvlOffset = isBoss ? 1 : Utils.rand(-1, 2);
+      const eLvl = Math.max(1, p.level + lvlOffset);
+      const scale = (1 + (eLvl - 1) * 0.18) * groupScale;
+      const hp = Math.max(1, Math.round(enemy.baseStats.hp * scale));
+      return {
         ...enemy,
         level: eLvl,
-        hp: eStats.hp, maxHp: eStats.hp,
-        atk: eStats.atk, def: eStats.def, spd: eStats.spd,
-        isBoss,
-        phase2Active: false,
-        shieldActive: false,
-        absorbActive: false,
-        spdBoost: 0
-      },
+        hp, maxHp: hp,
+        atk: Math.max(1, Math.round(enemy.baseStats.atk * scale)),
+        def: Math.max(0, Math.round(enemy.baseStats.def * scale)),
+        spd: Math.round(enemy.baseStats.spd * scale),
+        isBoss: !!enemy.isBoss || (isBoss && enemy.id === BOSS_PILAF.id),
+        phase2Active: false
+      };
+    });
+
+    State.combatState = {
+      player: { ...p, downed: false },
+      enemies,
+      targetIdx: 0,
       cooldowns: {},
       playerEffects: { shield: 0, evadeNext: false, absorb: false, spdBoost: 0 },
-      turn: 0,
+      companionActed: {},
+      isBoss,
       over: false
     };
 
-    // Inicializar cooldowns
+    // Reiniciar HP de compañeros "fuera de combate" no se hace aquí:
+    // conservan el HP que traían del mapa.
     p.techniques.forEach(t => State.combatState.cooldowns[t.id] = 0);
 
-    // Log
     document.getElementById('combat-log').innerHTML = '';
-    document.getElementById('combat-type-label').textContent = isBoss ? '⚔ Combate Final' : '🥋 Combate';
+    document.getElementById('combat-type-label').textContent = isBoss ? '⚔ Combate Final' : (enemies.length > 1 ? `🥋 Combate (${enemies.length} rivales)` : '🥋 Combate');
     this.techsOpen = false;
     document.getElementById('combat-techs-panel').classList.remove('open');
 
     UI.show('combat');
     this.setActionsEnabled(true);
     UI.updateCombatUI();
-    UI.addLog(`¡Comienza el combate contra ${enemy.name}!`, 'info');
+    const names = enemies.map(e => e.name).join(', ');
+    UI.addLog(`¡Comienza el combate contra ${names}!`, 'info');
   },
 
   toggleTechs() {
@@ -2573,20 +2741,41 @@ const Combat = {
   },
 
   startBoss() {
-    this.initCombat(BOSS_PILAF, true);
+    // El jefe SIEMPRE llega con los suyos: Pilaf + Mai + Shu juntos.
+    const mai = ENEMIES.find(e => e.id === 'mai');
+    const shu = ENEMIES.find(e => e.id === 'shu');
+    const group = [BOSS_PILAF, mai, shu].filter(Boolean).map(e => Utils.deepClone(e));
+    this.initCombat(group, true);
+  },
+
+  /* Selecciona a qué enemigo apuntan el jugador y los compañeros */
+  selectTarget(idx) {
+    const cs = State.combatState;
+    if (!cs || cs.over) return;
+    const en = cs.enemies[idx];
+    if (!en || en.hp <= 0) return;
+    cs.targetIdx = idx;
+    UI.updateCombatUI();
+  },
+
+  _currentTarget(cs) {
+    if (cs.enemies[cs.targetIdx] && cs.enemies[cs.targetIdx].hp > 0) return cs.targetIdx;
+    const idx = cs.enemies.findIndex(e => e.hp > 0);
+    cs.targetIdx = idx;
+    return idx;
   },
 
   playerAction(action) {
     const cs = State.combatState;
-    if (!cs || cs.over) return;
+    if (!cs || cs.over || cs.player.hp <= 0) return;
 
-    // Deshabilitar botones durante procesamiento
     this.setActionsEnabled(false);
-
     let acted = false;
 
     if (action === 'attack') {
-      this.executeAttack(cs.player, cs.enemy, cs.player.techniques[0], cs);
+      const ti = this._currentTarget(cs);
+      if (ti < 0) return;
+      this.executeAttack(cs.player, cs.enemies[ti], cs.player.techniques[0], cs);
       acted = true;
     } else if (action === 'item') {
       UI.closeModal('modal-combat-item');
@@ -2594,8 +2783,9 @@ const Combat = {
       this.setActionsEnabled(true);
       return;
     } else if (action === 'flee') {
-      if (cs.enemy.isBoss) { UI.toast('¡No puedes huir de un Boss!', 'bad'); this.setActionsEnabled(true); return; }
-      const chance = Utils.clamp(0.3 + (cs.player.spd - cs.enemy.spd) * 0.03, 0.15, 0.7);
+      if (cs.isBoss) { UI.toast('¡No puedes huir de un Boss!', 'bad'); this.setActionsEnabled(true); return; }
+      const enemySpd = Math.max(...cs.enemies.filter(e => e.hp > 0).map(e => e.spd));
+      const chance = Utils.clamp(0.3 + (cs.player.spd - enemySpd) * 0.03, 0.15, 0.7);
       if (Math.random() < chance) {
         UI.addLog('¡Has conseguido huir!', 'info');
         cs.over = true;
@@ -2607,37 +2797,83 @@ const Combat = {
       }
     }
 
-    if (acted) {
-      if (!cs.over) {
-        setTimeout(() => this.enemyTurn(cs), 700);
-      }
-    }
+    if (acted && !cs.over) this.endPlayerTurn(cs);
   },
 
   useTech(techId) {
     const cs = State.combatState;
-    if (!cs || cs.over) return;
+    if (!cs || cs.over || cs.player.hp <= 0) return;
     const p = cs.player;
     const tech = p.techniques.find(t => t.id === techId);
     if (!tech) return;
     if (p.ki < tech.cost) { UI.toast('Ki insuficiente.', 'bad'); return; }
     if ((cs.cooldowns[techId] || 0) > 0) { UI.toast('Técnica en cooldown.', 'bad'); return; }
 
+    const ti = this._currentTarget(cs);
+    if (ti < 0 && tech.type !== 'soporte') return;
+
     this.setActionsEnabled(false);
     document.getElementById('combat-techs-panel').classList.remove('open');
     this.techsOpen = false;
 
-    this.executeAttack(p, cs.enemy, tech, cs);
+    this.executeAttack(p, cs.enemies[ti] || null, tech, cs);
     cs.cooldowns[techId] = tech.cooldown;
 
-    if (!cs.over) {
-      setTimeout(() => this.enemyTurn(cs), 700);
-    }
+    if (!cs.over) this.endPlayerTurn(cs);
   },
 
+  /* Cierra la fase del jugador: ya se puede pasar turno o el motor
+     avanza directamente al turno enemigo tras un breve respiro */
+  endPlayerTurn(cs) {
+    setTimeout(() => {
+      if (!cs.over) this.enemyTurnAll(cs);
+    }, 700);
+  },
+
+  /* Botón "Pasar turno": termina la ronda sin que el jugador ataque
+     (útil si solo quieres mover a tus compañeros, o si el jugador
+     está derribado y no puede actuar) */
+  passTurn() {
+    const cs = State.combatState;
+    if (!cs || cs.over) return;
+    this.setActionsEnabled(false);
+    UI.addLog(`${cs.player.hp > 0 ? cs.player.name : 'El equipo'} pasa el turno.`, 'info');
+    this.endPlayerTurn(cs);
+  },
+
+  /* Ataque manual de un compañero — el jugador elige cuándo atacan */
+  companionAttack(companionId) {
+    const cs = State.combatState;
+    if (!cs || cs.over) return;
+    const c = State.companions.find(x => x.id === companionId);
+    if (!c || c.stats.hp <= 0) return;
+    if (cs.companionActed[companionId]) return;
+
+    const ti = this._currentTarget(cs);
+    if (ti < 0) return;
+    const enemy = cs.enemies[ti];
+
+    let dmg = Math.round(Math.max(1, c.stats.atk - (enemy.def * 0.5)));
+    let crit = false;
+    if (Math.random() < 0.10) { dmg = Math.round(dmg * 1.5); crit = true; }
+    enemy.hp -= dmg;
+    cs.companionActed[companionId] = true;
+
+    UI.addLog(`${c.name} ataca a ${enemy.name} → ${dmg} daño.${crit ? ' ¡CRÍTICO!' : ''}`, crit ? 'crit' : 'hit');
+    UI.floatDmg(crit ? `💥${dmg}` : `-${dmg}`, document.querySelector(`.enemy-card[data-idx="${ti}"] .fighter-avatar`), crit ? 'crit' : 'phys');
+
+    if (enemy.hp <= 0) {
+      enemy.hp = 0;
+      UI.addLog(`💥 ¡${enemy.name} ha sido derrotado!`, 'crit');
+    }
+    UI.updateCombatUI();
+    this.checkVictory(cs);
+  },
+
+  /* Los compañeros vivos que aún no han actuado este turno atacan
+     automáticamente si el jugador decide pasar turno sin usarlos */
   executeAttack(attacker, defender, tech, cs) {
     const p = cs.player;
-    const e = cs.enemy;
     const isPlayerAttacking = attacker === p;
 
     // Efectos de soporte sin daño
@@ -2660,20 +2896,21 @@ const Combat = {
         attacker.spd = Math.round(attacker.spd * 1.5);
         UI.addLog(`${attacker.name} usa ${tech.name}. ¡Velocidad turbocargada!`, 'ki');
       }
-      if (tech.fleeChance && !e.isBoss) {
+      if (tech.fleeChance && defender && !defender.isBoss) {
         if (Math.random() < tech.fleeChance) {
-          UI.addLog(`${attacker.name} soborna al enemigo. ¡${e.name} se retira!`, 'heal');
-          cs.over = true;
-          State.stats.fightsWon++;
-          setTimeout(() => this.winCombat(false), 900);
-          return;
+          UI.addLog(`${attacker.name} soborna a ${defender.name}. ¡Se retira del combate!`, 'heal');
+          defender.hp = 0;
+          UI.updateCombatUI();
+          this.checkVictory(cs);
         } else {
-          UI.addLog(`El soborno fracasó. ${e.name} no está impresionado.`, 'miss');
+          UI.addLog(`El soborno fracasó. ${defender.name} no está impresionado.`, 'miss');
         }
       }
       UI.updateCombatUI();
       return;
     }
+
+    if (!defender) return;
 
     // Fallo por chance
     const missChance = tech.missChance || 0;
@@ -2684,71 +2921,60 @@ const Combat = {
       return;
     }
 
-    // Pasiva Goku: esquivar físicos
-    if (!isPlayerAttacking && tech && tech.type === 'fisica' && p.passive && p.passive.name === 'Cola de Mono') {
+    // Pasiva Goku: esquivar físicos (solo cuando el objetivo es el jugador)
+    if (!isPlayerAttacking && defender === p && tech.type === 'fisica' && p.passive && p.passive.name === 'Cola de Mono') {
       if (Math.random() < 0.10) {
         UI.addLog(`¡${p.name} esquiva el ataque con su cola!`, 'heal');
         return;
       }
     }
 
-    // Calcular daño
-    const rawDef = isPlayerAttacking
-      ? (e.phase2Active ? Math.round(e.def * 1.5) : e.def)
-      : (cs.playerEffects.shield > 0 ? Math.round(p.def * 1.4) : p.def);
+    const targetIsPlayer = defender === p;
+    const rawDef = targetIsPlayer
+      ? (cs.playerEffects.shield > 0 ? Math.round(p.def * 1.4) : p.def)
+      : (defender.phase2Active ? Math.round(defender.def * 1.5) : defender.def);
 
     const pierceMult = tech.pierceDef ? (1 - tech.pierceDef) : 1;
     const effectiveDef = rawDef * pierceMult;
-    const atkStat = isPlayerAttacking ? p.atk : e.atk;
+    const atkStat = attacker.atk;
     let dmg = Math.round(Math.max(1, (atkStat * (tech.mult || 1)) - (effectiveDef * 0.5)));
 
-    // Crítico (10%)
     let crit = false;
     if (Math.random() < 0.10) { dmg = Math.round(dmg * 1.5); crit = true; }
 
-    // Absorb (robot cápsula)
-    if (!isPlayerAttacking && cs.playerEffects.absorb) {
+    if (targetIsPlayer && cs.playerEffects.absorb) {
       cs.playerEffects.absorb = false;
       UI.addLog(`¡El Robot Cápsula absorbe el golpe!`, 'heal');
       return;
     }
 
-    // Aplicar daño
-    if (isPlayerAttacking) {
-      e.hp -= dmg;
-    } else {
+    if (targetIsPlayer) {
       p.hp -= dmg;
+    } else {
+      defender.hp -= dmg;
     }
 
-    // Ki cost
     if (isPlayerAttacking) attacker.ki -= tech.cost;
 
-    // Log
     const techName = tech ? tech.name : 'Ataque';
     const cls = crit ? 'crit' : (isPlayerAttacking ? 'hit' : 'danger');
     const critTxt = crit ? ' ¡CRÍTICO!' : '';
-    UI.addLog(
-      `${attacker.name} usa ${techName} → ${dmg} daño a ${defender.name}.${critTxt}`,
-      cls
-    );
+    UI.addLog(`${attacker.name} usa ${techName} → ${dmg} daño a ${defender.name}.${critTxt}`, cls);
 
-    // Número flotante
-    const targetEl = document.getElementById(isPlayerAttacking ? 'cf-enemy-avatar' : 'cf-player-avatar');
-    UI.floatDmg(crit ? `💥${dmg}` : `-${dmg}`, targetEl, crit ? 'crit' : (tech.type === 'ki' ? 'ki' : 'phys'));
+    const targetSelector = targetIsPlayer ? '#cf-player-avatar' :
+      `.enemy-card[data-idx="${cs.enemies.indexOf(defender)}"] .fighter-avatar`;
+    const targetEl = document.querySelector(targetSelector);
+    if (targetEl) UI.floatDmg(crit ? `💥${dmg}` : `-${dmg}`, targetEl, crit ? 'crit' : (tech.type === 'ki' ? 'ki' : 'phys'));
 
     // Boss fase 2
-    if (e.isBoss && !e.phase2Active && e.hp / e.maxHp <= e.phase2Trigger) {
-      e.phase2Active = true;
-      UI.addLog(`⚠ ¡${e.name} activa el Modo Berserk! ¡Su defensa aumenta!`, 'danger');
+    if (!targetIsPlayer && defender.isBoss && !defender.phase2Active && defender.hp / defender.maxHp <= (defender.phase2Trigger || 0.3)) {
+      defender.phase2Active = true;
+      UI.addLog(`⚠ ¡${defender.name} activa el Modo Berserk! ¡Su defensa aumenta!`, 'danger');
       UI.toast('⚠ ¡Fase 2 activada!', 'bad');
     }
 
-    // Reducir cooldowns
-    if (!isPlayerAttacking) {
-      Object.keys(cs.cooldowns).forEach(k => {
-        if (cs.cooldowns[k] > 0) cs.cooldowns[k]--;
-      });
-      // Reducir efectos
+    if (!isPlayerAttacking && targetIsPlayer) {
+      Object.keys(cs.cooldowns).forEach(k => { if (cs.cooldowns[k] > 0) cs.cooldowns[k]--; });
       if (cs.playerEffects.shield > 0) cs.playerEffects.shield--;
       if (cs.playerEffects.spdBoost > 0) {
         cs.playerEffects.spdBoost--;
@@ -2756,60 +2982,126 @@ const Combat = {
       }
     }
 
+    if (!targetIsPlayer && defender.hp <= 0) {
+      defender.hp = 0;
+      UI.addLog(`💥 ¡${defender.name} ha sido derrotado!`, 'crit');
+    }
+
     UI.updateCombatUI();
 
-    // Check win/lose
-    if (e.hp <= 0) {
-      cs.over = true;
-      e.hp = 0;
-      UI.updateCombatUI();
-      State.stats.fightsWon++;
-      if (e.isBoss) State.stats.bossesDefeated++;
-      setTimeout(() => this.winCombat(e.isBoss), 900);
-    } else if (p.hp <= 0) {
-      p.hp = 0;
-      UI.updateCombatUI();
-      cs.over = true;
-      setTimeout(() => Game.gameOver(), 900);
+    if (targetIsPlayer) {
+      this.checkDefeat(cs);
+    } else {
+      this.checkVictory(cs);
     }
   },
 
-  enemyTurn(cs) {
+  /* ¿Han caído todos los enemigos? */
+  checkVictory(cs) {
     if (cs.over) return;
-    const p  = cs.player;
-    const e  = cs.enemy;
+    if (cs.enemies.every(e => e.hp <= 0)) {
+      cs.over = true;
+      State.stats.fightsWon++;
+      if (cs.isBoss) State.stats.bossesDefeated++;
+      setTimeout(() => this.winCombat(cs.isBoss), 900);
+    }
+  },
 
-    // IA simple: usa ataque básico; de vez en cuando un "ataque especial" más fuerte
+  /* ¿Han caído el jugador Y todos sus compañeros? Solo entonces se
+     acaba la partida — si alguno sigue en pie, el combate continúa. */
+  checkDefeat(cs) {
+    if (cs.over) return;
+    const p = cs.player;
+    if (p.hp <= 0) {
+      p.hp = 0;
+      if (!p.downed) {
+        p.downed = true;
+        UI.addLog(`💫 ${p.name} queda derribado, pero el equipo sigue luchando.`, 'miss');
+      }
+    }
+    const allCompanionsDown = State.companions.every(c => c.stats.hp <= 0);
+    if (p.hp <= 0 && (State.companions.length === 0 || allCompanionsDown)) {
+      cs.over = true;
+      State.player.hp = 0;
+      setTimeout(() => Game.gameOver(), 900);
+    }
+    UI.updateCombatUI();
+  },
+
+  enemyTurnAll(cs) {
+    if (cs.over) return;
+    const aliveEnemies = cs.enemies.filter(e => e.hp > 0);
+    let i = 0;
+    const step = () => {
+      if (cs.over) return;
+      if (i >= aliveEnemies.length) {
+        // Nueva ronda: los compañeros pueden volver a actuar
+        cs.companionActed = {};
+        if (!cs.over) this.setActionsEnabled(true);
+        return;
+      }
+      const enemy = aliveEnemies[i++];
+      if (enemy.hp <= 0) { step(); return; }
+      this.singleEnemyTurn(cs, enemy);
+      if (!cs.over) setTimeout(step, 550);
+    };
+    step();
+  },
+
+  singleEnemyTurn(cs, enemy) {
+    const p = cs.player;
+    const aliveCompanions = State.companions.filter(c => c.stats.hp > 0);
+    const pool = [];
+    if (p.hp > 0) pool.push(p, p, p);
+    aliveCompanions.forEach(c => pool.push(c));
+    if (pool.length === 0) return;
+    const target = pool[Utils.rand(0, pool.length - 1)];
+
+    if (target !== p) {
+      this.enemyAttackCompanion(cs, enemy, target);
+      return;
+    }
+
+    if (cs.playerEffects.evadeNext) {
+      cs.playerEffects.evadeNext = false;
+      UI.addLog(`¡${p.name} usa Afterimage y esquiva el ataque de ${enemy.name}!`, 'heal');
+      return;
+    }
+
     const useSpecial = Math.random() < 0.25;
     const fakeTech = useSpecial
       ? { name: 'Ataque Especial', type: 'fisica', cost: 0, mult: 1.8 }
       : { name: 'Ataque', type: 'fisica', cost: 0, mult: 1.0 };
+    this.executeAttack(enemy, p, fakeTech, cs);
+  },
 
-    // Evasión (Krillin pasiva afterimage)
-    if (cs.playerEffects.evadeNext) {
-      cs.playerEffects.evadeNext = false;
-      UI.addLog(`¡${p.name} usa Afterimage y esquiva el ataque de ${e.name}!`, 'heal');
-      this.setActionsEnabled(true);
-      return;
+  enemyAttackCompanion(cs, enemy, companion) {
+    const useSpecial = Math.random() < 0.25;
+    const mult = useSpecial ? 1.8 : 1.0;
+    let dmg = Math.round(Math.max(1, (enemy.atk * mult) - (companion.stats.def * 0.5)));
+    let crit = false;
+    if (Math.random() < 0.10) { dmg = Math.round(dmg * 1.5); crit = true; }
+    companion.stats.hp = Math.max(0, companion.stats.hp - dmg);
+    UI.addLog(`${enemy.name} ataca a ${companion.name} → ${dmg} daño.${crit ? ' ¡CRÍTICO!' : ''}`, crit ? 'crit' : 'danger');
+    if (companion.stats.hp <= 0) {
+      UI.addLog(`💫 ${companion.name} queda fuera de combate.`, 'miss');
     }
-
-    this.executeAttack(e, p, fakeTech, cs);
-    if (!cs.over) this.setActionsEnabled(true);
+    UI.updateCombatUI();
+    this.checkDefeat(cs);
   },
 
   winCombat(isBoss) {
     const xpGain = isBoss ? 3 : 1;
     const oldLvl = State.player.level;
 
-    // Sincronizar HP/Ki desde el estado de combate
     State.player.hp = Math.max(0, State.combatState.player.hp);
     State.player.ki = Math.min(State.player.maxKi, State.combatState.player.ki + 8);
+    // Si el jugador cayó pero el equipo ganó igualmente, se levanta con algo de vida
+    if (State.player.hp <= 0) State.player.hp = Math.max(1, Math.round(State.player.maxHp * 0.15));
 
-    // Subir nivel
     State.player.level += xpGain;
     const lvl = State.player.level;
 
-    // Escalar stats
     State.player.maxHp = State.player._baseMaxHp + (lvl - 1) * 5;
     State.player.atk   = State.player._baseAtk   + (lvl - 1) * 1.5;
     State.player.def   = State.player._baseDef   + (lvl - 1) * 0.8;
@@ -2818,8 +3110,7 @@ const Combat = {
     State.player.hp = Math.min(State.player.hp, State.player.maxHp);
     State.player.ki = Math.min(State.player.ki, State.player.maxKi);
 
-    const loot = State.combatState.enemy.loot;
-    // Mostrar pantalla de level up (ella se encarga de continuar)
+    const loot = State.combatState.enemies.map(e => e.loot).filter(l => l && l !== 'Nada')[0] || 'Nada';
     setTimeout(() => LevelUp.show(oldLvl, lvl, xpGain, isBoss, loot), 600);
   },
 
@@ -2850,12 +3141,14 @@ const Combat = {
 
     if (item.effect === 'fullheal') {
       p.hp = p.maxHp;
+      p.downed = false;
       State.player.hp = p.maxHp;
       UI.addLog(`${p.name} usa ${item.name}. ¡HP restaurado al máximo!`, 'heal');
       UI.floatDmg(`+${p.maxHp}`, document.getElementById('cf-player-avatar'), 'heal');
     } else if (item.effect === 'heal30') {
       const gain = Math.min(30, p.maxHp - p.hp);
       p.hp += gain;
+      if (p.hp > 0) p.downed = false;
       State.player.hp = p.hp;
       UI.addLog(`${p.name} come ${item.name}. +${gain} HP.`, 'heal');
     } else if (item.effect === 'cure') {
@@ -2864,15 +3157,20 @@ const Combat = {
 
     State.inventory.splice(idx, 1);
     UI.updateCombatUI();
-    this.setActionsEnabled(false);
-    setTimeout(() => this.enemyTurn(cs), 700);
+    if (!cs.over) this.endPlayerTurn(cs);
   },
 
   setActionsEnabled(enabled) {
-    ['btn-attack','btn-tech','btn-item','btn-flee'].forEach(id => {
+    const cs = State.combatState;
+    const playerAlive = !cs || cs.player.hp > 0;
+    ['btn-attack','btn-tech','btn-item'].forEach(id => {
       const btn = document.getElementById(id);
-      if (btn) btn.disabled = !enabled;
+      if (btn) btn.disabled = !enabled || !playerAlive;
     });
+    const fleeBtn = document.getElementById('btn-flee');
+    if (fleeBtn) fleeBtn.disabled = !enabled || !playerAlive || (cs && cs.isBoss);
+    const passBtn = document.getElementById('btn-pass');
+    if (passBtn) passBtn.disabled = !enabled;
   }
 };
 
@@ -3189,7 +3487,7 @@ const Recruit = {
 
   show() {
     const available = COMPANIONS_POOL.filter(c => !State.companions.find(sc => sc.id === c.id));
-    if (State.companions.length >= 2 || available.length === 0) {
+    if (State.companions.length >= MAX_COMPANIONS || available.length === 0) {
       // Sin hueco en el equipo o ya reclutados todos: encuentro amistoso alternativo
       const gain = 15;
       State.player.hp = Math.min(State.player.maxHp, State.player.hp + gain);
@@ -3275,7 +3573,7 @@ const Game = {
       const maxStat = 100;
       return `
         <div class="char-card" data-char="${char.id}" onclick="Game.selectChar('${char.id}')">
-          <div class="char-avatar">${char.avatar}</div>
+          <div class="char-avatar">${buildSilhouette(char.id)}</div>
           <div class="char-name">${char.name}</div>
           <div class="char-style">${char.style}</div>
           ${Object.entries({HP:char.statColors.hp, ATK:char.statColors.atk, DEF:char.statColors.def, SPD:char.statColors.spd, Ki:char.statColors.ki}).map(([k,v]) => `
@@ -3363,12 +3661,20 @@ const Game = {
 
   startFight() {
     const pool = ENEMIES.filter(e => e.type === 'normal');
-    const special = ENEMIES.filter(e => e.type === 'special');
-    // A veces (30%) aparece un enemigo especial
+    const special = ENEMIES.filter(e => e.type === 'special' || e.type === 'miniboss');
+    // A veces (30%) aparece un rival especial/miniboss en vez de uno normal
     const useSpecial = Math.random() < 0.3 && special.length > 0;
     const pool2 = useSpecial ? special : pool;
-    const enemy = Utils.deepClone(pool2[Utils.rand(0, pool2.length - 1)]);
-    Combat.initCombat(enemy);
+
+    // Variedad de rivales: casi siempre 1, a veces 2, rara vez 3
+    const roll = Math.random();
+    const count = roll < 0.62 ? 1 : (roll < 0.90 ? 2 : 3);
+
+    const enemies = [];
+    for (let i = 0; i < count; i++) {
+      enemies.push(Utils.deepClone(pool2[Utils.rand(0, pool2.length - 1)]));
+    }
+    Combat.initCombat(enemies);
   },
 
   doHeal() {
@@ -3376,12 +3682,17 @@ const Game = {
     const kiGain  = Math.round(State.player.maxKi * 0.35);
     State.player.hp = Math.min(State.player.maxHp, State.player.hp + gain);
     State.player.ki = Math.min(State.player.maxKi, State.player.ki + kiGain);
+    State.companions.forEach(c => {
+      c.stats.hp = Math.min(c.stats.maxHp, c.stats.hp + Math.round(c.stats.maxHp * 0.35));
+    });
     UI.updateSidebar();
     this._showHeal(gain, 'Has encontrado un lugar tranquilo. HP y Ki recuperados.');
   },
 
   showBossIntro() {
-    document.getElementById('boss-icon').textContent = BOSS_PILAF.emoji;
+    const iconEl = document.getElementById('boss-icon');
+    iconEl.innerHTML = buildSilhouette(BOSS_PILAF.id);
+    iconEl.style.background = Utils.spriteGradient(BOSS_PILAF.id);
     document.getElementById('boss-name').textContent = BOSS_PILAF.name;
     document.getElementById('boss-lore').textContent = BOSS_PILAF.lore;
     UI.show('boss-intro');
